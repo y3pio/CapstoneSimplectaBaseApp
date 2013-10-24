@@ -30,18 +30,31 @@ public class JavaScriptInterface {
 		MainActivity.html = html;
 		
 		//save html to a text file for debugging purposes
-		//HtmlFile writer = new HtmlFile(TAG);
-		//writer.makeHTMLFile(html);
+		HtmlFile writer = new HtmlFile(TAG);
+		writer.makeHTMLFile(html);
 		
 		//parse here, please replace "your url here" with your url
-		if (MainActivity.URLtoLoad == "http://simplecta.appspot.com"){
-			new Parse(context, TAG, html).JasonParse();
-		}
-		if (MainActivity.URLtoLoad == "your url here"){
+		System.out.println("LOADING URL: " + MainActivity.URLtoLoad);
+		/*if (MainActivity.URLtoLoad.contains("feeds")){
+			System.out.println("HELLO BRIAN!!");
 			new Parse(context, TAG, html).BrianParse();
 		}
-		if (MainActivity.URLtoLoad == "your url here"){
+		else if (!(MainActivity.URLtoLoad.contains("feeds"))){
+			System.out.println("HELLO JASON!!");
+			new Parse(context, TAG, html).JasonParse();
+		}
+		
+		else if (MainActivity.URLtoLoad == "your url here"){
 			new Parse(context, TAG, html).YeParse();
+		}*/
+		
+		if(MainActivity.URLtoLoad.compareTo("http://simplecta.appspot.com/feeds/")==0){
+			System.out.println("HELLO BRIAN!!");
+			new Parse(context, TAG, html).BrianParse();
+		}
+		else if(MainActivity.URLtoLoad.contains("simplecta.appspot.com")){
+			System.out.println("HELLO JASON!!");
+			new Parse(context, TAG, html).JasonParse();
 		}
 		
 	

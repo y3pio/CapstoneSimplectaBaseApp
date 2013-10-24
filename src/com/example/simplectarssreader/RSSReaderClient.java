@@ -31,7 +31,7 @@ class RSSReaderClient extends WebViewClient {
 				return false;
 			}
 			else {//user clicked an rss feed
-				
+				webview.loadUrl(url);
 				return true;
 			}
 		}
@@ -43,12 +43,18 @@ class RSSReaderClient extends WebViewClient {
 	
 	@Override
     public void onPageFinished(WebView webview, String url){
+		MainActivity.URLtoLoad=url;
 		if (Uri.parse(url).getHost().equals("simplecta.appspot.com")){
-			MainActivity.isLoggedIn = true;
-			/* This call inject JavaScript into the page which just finished loading. */
-			//this only needs to be done to simplecta urls because it is behind a log in, can httpget everything else
 			webview.loadUrl("javascript:window.HTMLOUT.processHTML('<html>'+document.getElementsByTagName('html')[0].innerHTML+'</html>');");
+			if(MainActivity.isLoggedIn==false){
+				MainActivity.isLoggedIn = true;
+				/* This call inject JavaScript into the page which just finished loading. */
+				//this only needs to be done to simplecta urls because it is behind a log in, can httpget everything else
+				//webview.wait(1000);
+				webview.loadUrl("http://simplecta.appspot.com/feeds/");
+			}
 		}
+		
 	}
 	
 }

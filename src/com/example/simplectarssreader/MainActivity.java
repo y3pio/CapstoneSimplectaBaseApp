@@ -60,7 +60,6 @@ public class MainActivity extends Activity{
 		URLtoLoad = url;
 		Log.d(TAG, "loading: " + url);
 		wv.loadUrl(url);
-		
 		//feeds.add(new RSSFeed("a","b","c","d"));
 		
 	}//end of oncreate
