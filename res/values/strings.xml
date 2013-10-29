@@ -23,15 +23,5 @@
     
     <string name="simplecta_googlelogin_URL">https://appengine.google.com/_ah/conflogin?continue=http://simplecta.appspot.com/</string>
     
-    <!-- category start -->
-    <string name="html_feeds_feedlinkstart">class="feedlink" href="</string>
-    <!-- category ends with </a> -->
-    
-    <!-- url mark read, and desc start -->
-    <string name="html_feeds_markstart">class=\"read_link\" href=\"</string>
-    <!-- url mark read end, desc is at the end, url start -->
-    <string name="html_feeds_peekstart">class="peek" href="</string>
-	<string name="html_feeds_peekend">">(peek)</string>
-	<!-- url end -->
 	
 </resources>

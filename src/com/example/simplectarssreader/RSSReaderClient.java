@@ -1,8 +1,8 @@
 package com.example.simplectarssreader;
 
 import android.content.Context;
-import android.content.Intent;
-import android.net.Uri;
+import android.util.Log;
+import android.view.View;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
@@ -37,24 +37,38 @@ class RSSReaderClient extends WebViewClient {
 		}
 		
 		//new RequestTask(context,TAG).execute(url);
-			
+		webview.loadUrl(url);
 		return true;
 	}
 	
 	@Override
     public void onPageFinished(WebView webview, String url){
-		MainActivity.URLtoLoad=url;
-		if (Uri.parse(url).getHost().equals("simplecta.appspot.com")){
+		MainActivity.URLtoLoad = url;
+		String urlHost = url.substring(0,url.indexOf(".com/")+4);
+		Log.d(TAG, "host is :" + urlHost);
+		Log.d(TAG, "url is : " + url);
+		if (urlHost.contains("simplecta.appspot.com")){
 			webview.loadUrl("javascript:window.HTMLOUT.processHTML('<html>'+document.getElementsByTagName('html')[0].innerHTML+'</html>');");
-			if(MainActivity.isLoggedIn==false){
+			if (MainActivity.isLoggedIn == false){
+				Log.d(TAG, "log in sucess");
 				MainActivity.isLoggedIn = true;
-				/* This call inject JavaScript into the page which just finished loading. */
-				//this only needs to be done to simplecta urls because it is behind a log in, can httpget everything else
-				//webview.wait(1000);
+				MainActivity.wv.setVisibility(View.GONE);
 				webview.loadUrl("http://simplecta.appspot.com/feeds/");
 			}
 		}
-		
+		if (urlHost.contains("simplecta.com")){
+			webview.loadUrl("javascript:window.HTMLOUT.processHTML('<html>'+document.getElementsByTagName('html')[0].innerHTML+'</html>');");
+			if (MainActivity.isLoggedIn == false){
+				Log.d(TAG, "log in sucess");
+				MainActivity.isLoggedIn = true;
+				//webview.loadUrl("http://simplecta.appspot.com/feeds/");
+			}
+		//	if (url.contains("/feeds/")){
+		//		for (int i = 0; i<MainActivity.objectList.size(); i++){
+		//			webview.loadUrl("http://simplecta.appspot.com" + MainActivity.objectList.get(i).getUrl());
+		//		}
+		//	}
+		}
 	}
 	
 }

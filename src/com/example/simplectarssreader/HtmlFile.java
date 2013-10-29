@@ -7,7 +7,7 @@ import java.io.PrintWriter;
 
 import android.util.Log;
 
-public class HtmlFile {
+public class HtmlFile {//this class is only used for debugging/testing purposes
 	final static String TAG = "HtmlFile";
 	
 	String filename;

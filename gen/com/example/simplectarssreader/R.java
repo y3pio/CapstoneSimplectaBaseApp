@@ -37,6 +37,8 @@ public final class R {
         public static final int group1=0x7f090008;
         public static final int item1=0x7f090009;
         public static final int item2=0x7f09000a;
+        public static final int item3=0x7f09000b;
+        public static final int item4=0x7f09000c;
         public static final int textView1=0x7f090000;
         public static final int webView=0x7f090003;
     }
@@ -55,17 +57,6 @@ public final class R {
         public static final int action_managefeeds=0x7f050003;
         public static final int action_settings=0x7f050001;
         public static final int app_name=0x7f050000;
-        /**  category start 
-         */
-        public static final int html_feeds_feedlinkstart=0x7f05000d;
-        /**  category ends with </a> 
- url mark read, and desc start 
-         */
-        public static final int html_feeds_markstart=0x7f05000e;
-        public static final int html_feeds_peekend=0x7f050010;
-        /**  url mark read end, desc is at the end, url start 
-         */
-        public static final int html_feeds_peekstart=0x7f05000f;
         public static final int simplecta_URL=0x7f050008;
         public static final int simplecta_feeds_URL=0x7f05000a;
         public static final int simplecta_googlelogin_URL=0x7f05000c;

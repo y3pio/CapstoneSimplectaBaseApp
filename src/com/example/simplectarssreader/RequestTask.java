@@ -33,12 +33,13 @@ class RequestTask extends AsyncTask<String, String, String>{
 	protected RequestTask(Context c, String calledFrom){
 		context = c;
 		fromActivity = calledFrom;
+		Log.d(TAG, "---------RequestTask---------");
 	}
 	
 
 	@Override
     protected String doInBackground(String... uri) {
-		Log.d(TAG, "url = " + uri[0]);
+		Log.d(TAG, "AsyncTask, url = " + uri[0]);
 		MainActivity.URLtoLoad = uri[0];
         HttpClient httpclient = new DefaultHttpClient();
         HttpResponse response;
@@ -58,22 +59,22 @@ class RequestTask extends AsyncTask<String, String, String>{
             }
         } catch (ClientProtocolException e) {
             //TODO Handle problems..
+        	Log.d(TAG, "Failed: ClientProtocolException");
         } catch (IOException e) {
             //TODO Handle problems..
+        	Log.d(TAG, "Failed: IOException");
         }
         
         htmlString = responseString;
-        return responseString;
-        
+        return responseString;    
     }
 
     @Override
     protected void onPostExecute(String result) {
         super.onPostExecute(result);
-        
+        Log.d(TAG, "onPostExecute");
        	new HtmlFile(TAG).makeHTMLFile(htmlString);
-        MainActivity.html = htmlString;
- 
+        MainActivity.html = htmlString; //we should probably use an arraylist instead
     }
     
 

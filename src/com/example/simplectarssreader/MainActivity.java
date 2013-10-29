@@ -1,5 +1,8 @@
 package com.example.simplectarssreader;
 
+//tag:^(?!(Choreographer|dalvikvm))
+
+
 import java.io.File;
 import java.util.ArrayList;
 
@@ -20,22 +23,39 @@ public class MainActivity extends Activity{
 	
 	public static File filesDir;
 	
-	WebView wv,wv2;
+	public static WebView wv,wv2;
 
 	public static String html, URLtoLoad;
-	public static boolean isLoggedIn;
+	public static boolean isLoggedIn, loadedYe, loadedBrian, loadedJason;
 	
 	public static ArrayList<ParsedMain> feeds;
 	public static ArrayList<ParsedFeed> parsedItems;
 	public static ArrayList<ParseSubscriptions> objectList;
+	public static ArrayList<ParsedXML> XMLitems;
+	
+	public static String htmlstart, htmlend, loadthis;
+	
+	public static String htmlheaderstart, htmlheaderend;
 	
 	@Override	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);	
 		setContentView(R.layout.new_activity_main);
+		Log.d(TAG, "-------------START APP----------");
 		
 		feeds = new ArrayList<ParsedMain>(); 		//Jason's 
 		parsedItems = new ArrayList<ParsedFeed>(); 	//Ye's
 		objectList = new ArrayList<ParseSubscriptions>();	//Brian's
+		XMLitems = new ArrayList<ParsedXML>();
+		
+		loadedJason = false;
+		loadedYe = false;
+		loadedBrian = false;
+		
+		htmlstart = "<!DOCTYPE html>\n<html>\n<body>\n<p>main page</p>";
+		htmlend = "</body>\n</html>";
+		
+		htmlheaderstart = "<p>";
+		htmlheaderend = "</p>";
 		
 		
 		Log.d(TAG, "create file directory");
@@ -50,6 +70,7 @@ public class MainActivity extends Activity{
 		wv2 = (WebView) findViewById(R.id.webView);
 		wv2.getSettings().setJavaScriptEnabled(true);
 		wv2.setWebViewClient(new RSSReaderClient(this, TAG));
+		wv2.setVisibility(View.GONE);
 		
 		wv = (WebView) findViewById(R.id.MainActivity_WebView1);
 		wv.getSettings().setJavaScriptEnabled(true);
@@ -60,6 +81,7 @@ public class MainActivity extends Activity{
 		URLtoLoad = url;
 		Log.d(TAG, "loading: " + url);
 		wv.loadUrl(url);
+		
 		//feeds.add(new RSSFeed("a","b","c","d"));
 		
 	}//end of oncreate
@@ -88,7 +110,13 @@ public class MainActivity extends Activity{
             case R.id.action_logout:
             	if (isLoggedIn == true){
             		wv.loadUrl(getString(R.string.simplecta_logout_URL));
+            		Log.d(TAG, "log out sucess");
             		isLoggedIn = false;
+            		loadedBrian = false;
+            		loadedYe = false;
+            		feeds.clear();
+            		XMLitems.clear();
+            		objectList.clear();
             	}
             	return true;  
             case R.id.item1:
@@ -99,6 +127,11 @@ public class MainActivity extends Activity{
             	wv.setVisibility(View.GONE);
             	wv2.setVisibility(View.VISIBLE);
             	return true;           	
+            case R.id.item3:
+            	wv.setVisibility(View.GONE);
+            	wv2.setVisibility(View.GONE);
+            case R.id.item4:
+            	;
             default:
                 return super.onOptionsItemSelected(item);
         }
