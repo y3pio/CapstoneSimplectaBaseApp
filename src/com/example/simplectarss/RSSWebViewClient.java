@@ -4,7 +4,7 @@ import android.view.View;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-public class htmlParserClient extends WebViewClient{
+public class RSSWebViewClient extends WebViewClient{
 	@Override
 	public boolean shouldOverrideUrlLoading(WebView webview, String url){	
 		if(url.contains("google")){
@@ -14,6 +14,9 @@ public class htmlParserClient extends WebViewClient{
 		else if(url.contains("http://simplecta.appspot.com")){
 			webview.loadUrl(url);
 		}
+		else
+			webview.loadUrl(url);
+		
 		return true;
 	}
 	
@@ -24,4 +27,6 @@ public class htmlParserClient extends WebViewClient{
 		
 		super.onPageFinished(webview, url);
 	}
+	
+	
 }

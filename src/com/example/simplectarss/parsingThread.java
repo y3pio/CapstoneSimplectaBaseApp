@@ -77,8 +77,9 @@ public class parsingThread extends AsyncTask<String, Void, Integer> {
 				+	"<body><div class=\"wrap\"><div class=\"content\">"; 
 		//This takes a while to load. Links somehow not working
 		for(int i=0; i<MainActivity.feeds.size(); i++){
-			indexPage+="<article class=\"underline\"><div class=\"post-content\"><h2><a href=\"" + MainActivity.feeds.get(i).getURL()
-					+"\">" + MainActivity.feeds.get(i).getDesc() + "</a></h2><p>" + MainActivity.feeds.get(i).getCategory()
+			//System.out.println(MainActivity.feeds.get(i).getURL());
+			indexPage+="<article class=\"underline\"><div class=\"post-content\"><h2><a href=\""+MainActivity.feeds.get(i).getURL()
+			+"\" /a>" + MainActivity.feeds.get(i).getDesc() + "</a></h2><p>" + MainActivity.feeds.get(i).getCategory()
 					+"</p></div><div class=\"clear\"></div></article>";
 		}
 		indexPage+="</div></body></html>";

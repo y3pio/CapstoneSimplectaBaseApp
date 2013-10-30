@@ -21,7 +21,7 @@ public class MainActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 		wv = (WebView) findViewById(R.id.main_webview);
-		wv.setWebViewClient(new htmlParserClient());
+		wv.setWebViewClient(new RSSWebViewClient());
 		wv.getSettings().setJavaScriptEnabled(true);
 		wv.addJavascriptInterface(new JavaScriptInterface(), "HTMLOUT");
 		wv.loadUrl("http://simplecta.appspot.com");			//Load the url that is to be parsed
