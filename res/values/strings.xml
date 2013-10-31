@@ -1,9 +1,29 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <string name="app_name">Simplecta RSS</string>
+    <string name="app_name">RSS Reader</string>
+    
     <string name="action_settings">Settings</string>
-    <string name="hello_world">Hello world!</string>
-    <string name="title_activity_rssviewer">RSSViewerActivity</string>
-
+    <string name="action_logout">Logout</string>
+    <string name="action_managefeeds">Manage Feeds</string>
+    
+    <color name="white">#FFFFFF</color>
+    <color name="black">#000000</color>
+    
+  	<string name="title_MainActivity">Simplecta RSS Reader</string>
+    <string name="title_LoadActivity">Simplecta RSS Reader</string>
+    <string name="LoadActivity_text">Loading your feeds</string>
+    <string name="title_RSSActivity">Your RSS Feeds</string>
+    
+    
+    <string name="simplecta_URL">http://simplecta.appspot.com</string>
+    <string name="simplecta_managefeeds_URL">http://www.simplecta.com/feeds/</string>
+    <string name="simplecta_feeds_URL">http://www.simplecta.com/all/</string>
+    <string name="simplecta_logout_URL">http://simplecta.appspot.com/_ah/logout?continue=https://www.google.com/accounts/Logout%3Fcontinue%3Dhttps://appengine.google.com/_ah/logout%253Fcontinue%253Dhttp://simplecta.appspot.com/%26service%3Dah</string>
+    <string name="simplecta_login_URL">https://accounts.google.com/ServiceLogin?service=ah&amp;passive=true&amp;continue=https%3A%2F%2Fappengine.google.com%2F_ah%2Fconflogin%3Fcontinue%3Dhttp%3A%2F%2Fsimplecta.appspot.com%2F&amp;ltmpl=gm&amp;shdf=ChULEgZhaG5hbWUaCVNpbXBsZWN0YQwSAmFoIhRkt2n5icx2ZfNQrZC4ga09Chc6dSgBMhR2T5mk9ZxKsiZCXaUb-7IoKVexlw</string>
+   
+    
+    <string name="simplecta_googlelogin_URL">https://appengine.google.com/_ah/conflogin?continue=http://simplecta.appspot.com/</string>
+    
+	
 </resources>
