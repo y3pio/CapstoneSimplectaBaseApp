@@ -19,6 +19,10 @@ import android.content.Intent;
 import android.os.AsyncTask;
 import android.util.Log;
 
+/*
+ * code by Konstantin Burov
+ * taken from: http://stackoverflow.com/questions/3505930/make-an-http-request-with-android
+ */
 class RequestTask extends AsyncTask<String, String, String>{
 	final static String TAG = "RequestTask";
 	String htmlString, fromActivity;
@@ -72,5 +76,9 @@ Log.d(TAG, "onPostExecute");
        	//new HtmlFile(TAG).makeHTMLFile(htmlString);
         //MainActivity.html = htmlString; //we should probably use an arraylist instead
     }
+    
+
+    
+    
     
 }

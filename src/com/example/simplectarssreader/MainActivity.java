@@ -7,19 +7,25 @@ import java.io.File;
 import java.util.ArrayList;
 
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.text.Editable;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.View.OnClickListener;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
+import android.widget.EditText;
 
 
-public class MainActivity extends Activity{
+public class MainActivity extends Activity implements OnClickListener{
 	final static String TAG = "MainActivity";
 	
 	public static File filesDir;
@@ -35,11 +41,13 @@ public class MainActivity extends Activity{
 	
 	public static String URLtoLoad, simplectaMain, simplectaFeedsList;
 	
+	public static boolean check;
+	
 	Context context;
 	
 	@Override	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);	
-		setContentView(R.layout.new_activity_main);
+		setContentView(R.layout.activity_main);
 		Log.d(TAG, "-------------START APP----------");
 		
 		context = this;
@@ -62,20 +70,19 @@ public class MainActivity extends Activity{
 		isLoggedIn = false;
 		isLogInFinished = false;
         
-		wvUser = (WebView) findViewById(R.id.webView);
+		wvUser = (WebView) findViewById(R.id.MainActivity_WebView_User);
 		wvUser.getSettings().setJavaScriptEnabled(true);
 		wvUser.setWebViewClient(new RSSReaderClient(this, TAG));
 		wvUser.addJavascriptInterface(new JavaScriptInterface(context, TAG), "USER");
 		wvUser.setVisibility(View.GONE);
 		
-		wvMain = (WebView) findViewById(R.id.MainActivity_WebView1);
+		wvMain = (WebView) findViewById(R.id.MainActivity_WebView_Main);
 		wvMain.getSettings().setJavaScriptEnabled(true);
 		wvUser.setWebViewClient(new WebViewClient());
-			
+				
 		SimplectaLogIn();
 		
 	}//end of oncreate
-	
 	
 	public void SimplectaLogIn(){
 Log.d(TAG, "loadSimplectaLogIn()");
@@ -83,23 +90,16 @@ Log.d(TAG, "loadSimplectaLogIn()");
 			@Override
 			public void onPageStarted(WebView view, String url, Bitmap favicon){
 				String urlHost = url.substring(0,url.indexOf(".com/")+4);
-				
 				if (urlHost.contains("simplecta")){
 Log.d(TAG, "log in success: " + url);
 					isLoggedIn = true;
-					
-					//wvMain.setWebViewClient(new WebViewClient());
 					wvMain.setVisibility(View.GONE);
-					
 				}
 			}
 			@Override
 			public void onPageFinished(WebView view, String url) {
 				String urlHost = url.substring(0,url.indexOf(".com/")+4);
 				if (urlHost.contains("simplecta")){
-Log.d(TAG, "log in success: " + url);
-					isLoggedIn = true;
-					
 					wvMain.setWebViewClient(new WebViewClient());
 					
 					getSimplectaMain();//start getting info from simplecta
@@ -182,7 +182,6 @@ Log.d(TAG, "start inject javascript" + url);
 		});  
 
 		wvMain.loadUrl(getString(R.string.simplecta_managefeeds_URL));
-
 	}
 	
 	
@@ -220,13 +219,7 @@ Log.d(TAG, "failure to log out");
 Log.d(TAG, "not logged in yet");
 		}
 	}
-	
-	public void resetWebView(WebView wv){
-		wv.addJavascriptInterface(null, null);
-		wv.setWebViewClient(new WebViewClient());
-	}
-	
-	
+		
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
@@ -242,25 +235,12 @@ Log.d(TAG, "not logged in yet");
                  //   Intent settings = new Intent(this, SettingsActivity.class);
                  //   startActivity(settings);
                return true;
-            case R.id.action_manageFeeds:
-            	;
-            	return true;
             case R.id.action_logout:
             	SimplectaLogOut();
             	return true;  
             case R.id.item1:
-            	wvUser.setVisibility(View.GONE);
-            	wvMain.setVisibility(View.VISIBLE);
-            	return true;
-            case R.id.item2:
-            	wvMain.setVisibility(View.GONE);
-            	wvUser.setVisibility(View.VISIBLE);
-            	return true;           	
-            case R.id.item3:
-            	wvMain.setVisibility(View.GONE);
-            	wvUser.setVisibility(View.GONE);
-            case R.id.item4:
-            	;
+
+            	
             default:
                 return super.onOptionsItemSelected(item);
         }
@@ -274,8 +254,9 @@ Log.d(TAG, "not logged in yet");
 		for(int i=0; i<MainActivity.feeds.size(); i++){
 			//System.out.println(MainActivity.feeds.get(i).getURL());
 			indexPage+="<article class=\"underline\"><div class=\"post-content\"><h2><a href=\""+MainActivity.feeds.get(i).getURL()
-			+"\" /a>" + MainActivity.feeds.get(i).getDesc() + "</a></h2><p>" + MainActivity.feeds.get(i).getCategory()
-					+"</p></div><div class=\"clear\"></div></article>";
+			+"\" /a>" + MainActivity.feeds.get(i).getDesc() +"</a></h2><p>" + MainActivity.feeds.get(i).getCategory()
+			/*+"<input type=\"checkbox\" name=\"markBox\" value=\"markRead\">"*/	
+			+"</p></div><div class=\"clear\"></div></article>";
 		}
 		indexPage+="</div></body></html>";
 		MainActivity.wvUser.setVisibility(View.VISIBLE);
@@ -301,5 +282,90 @@ Log.d(TAG, MainActivity.objectList.get(i).getUrl());
 Log.d(TAG, "done getting xml from feeds");
 	}
 	
+	public void newRSSFeed(String rssURL){
+Log.d(TAG, "newRSSFeed()");
+		final String fillForm = "javascript:void(document.forms[1].url.value=\"" + rssURL + "\");";
+		final String submitForm = "javascript:(document.forms[1].submit());";
+Log.d(TAG, "fillForm = " + fillForm);
+Log.d(TAG, "submitForm = " + submitForm);
+
+		wvMain.setWebViewClient(new WebViewClient(){
+			boolean loaded1 = false;
+			boolean loaded2 = false;
+			@Override
+			public void onPageFinished(WebView webview, String url){
+				if (loaded1 == false){
+					Log.d(TAG, "loaded = false");
+					Log.d(TAG, "loadUrl(" + fillForm + submitForm + ")");
+					loaded1 = true;
+					webview.loadUrl(fillForm + submitForm);
+				}
+				else if (loaded1 == true){
+					Log.d(TAG, "loaded = true");
+					if (url.contains("/addRSS/?")){
+						Log.d(TAG, "failed to add rss feed");
+					}
+					else {
+						Log.d(TAG, "successfully added new rss feed");
+					}
+				}
+			}		
+		});
+		
+		wvMain.loadUrl(getString(R.string.simplecta_managefeeds_URL));
+		
+	}
+	
+	@Override
+	public void onClick(View v) {
+		switch (v.getId()){
+	/*	case R.id.okButton:
+			newRSSFeed(textBox.getText().toString());
+			subscribeOK();*/
+		}
+		
+	}
+	
+	public void addRSSFeed(){
+		final EditText input = new EditText(this);
+    	AlertDialog.Builder builder = new AlertDialog.Builder(this);
+    	builder.setTitle("Title");
+    	builder.setMessage("Message");
+    	builder.setView(input);
+    	builder.setNegativeButton("Add", new DialogInterface.OnClickListener(){
+    		@Override
+            public void onClick(DialogInterface dialog, int which){
+              	;
+            }
+        });
+    	builder.setNeutralButton("Clear", new DialogInterface.OnClickListener(){
+    		@Override
+            public void onClick(DialogInterface dialog, int which){
+              	;
+            }
+        });
+    	builder.setPositiveButton("Done", new DialogInterface.OnClickListener(){
+    		@Override
+            public void onClick(DialogInterface dialog, int which){
+              	;
+            }
+        });
+    	
+    	final AlertDialog addRSS = builder.create();
+    	addRSS.show();
+    	addRSS.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(new View.OnClickListener(){            
+            @Override
+            public void onClick(View v){
+                Editable value = input.getText();
+          	  	newRSSFeed(value.toString());                
+            }
+        });
+    	addRSS.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(new View.OnClickListener(){            
+            @Override
+            public void onClick(View v){
+                input.setText("");              
+            }
+        });
+	}
 
 }//end of mainactivity
