@@ -1,5 +1,9 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
-
+    
+    <item android:id="@+id/action_search_icon"
+          android:title="@string/action_search"
+          android:showAsAction="ifRoom" />
+    
     <item
         android:id="@+id/action_settings"
         android:orderInCategory="100"
@@ -8,4 +12,5 @@
     <item android:id="@+id/action_logout" android:title="@string/action_logout" android:showAsAction="never"></item>
     <item android:id="@+id/item1" android:title="1"></item>
 
+    
 </menu>

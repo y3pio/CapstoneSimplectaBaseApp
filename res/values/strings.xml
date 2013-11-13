@@ -6,6 +6,7 @@
     <string name="action_settings">Settings</string>
     <string name="action_logout">Logout</string>
     <string name="action_managefeeds">Manage Feeds</string>
+    <string name="action_search">Search</string>
     
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>

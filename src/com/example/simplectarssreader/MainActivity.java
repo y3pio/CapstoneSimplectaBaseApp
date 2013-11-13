@@ -23,6 +23,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Toast;
 
 
 public class MainActivity extends Activity implements OnClickListener{
@@ -224,13 +225,16 @@ Log.d(TAG, "not logged in yet");
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.main, menu);
-		return true;
+		return super.onCreateOptionsMenu(menu);
 	}
 
 	@Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle item selection
         switch (item.getItemId()) {
+            case R.id.action_search_icon:
+            	Toast.makeText(this, "HELLO SEARCH!!", Toast.LENGTH_SHORT).show();
+            	return true;
             case R.id.action_settings:
                  //   Intent settings = new Intent(this, SettingsActivity.class);
                  //   startActivity(settings);
@@ -239,6 +243,7 @@ Log.d(TAG, "not logged in yet");
             	SimplectaLogOut();
             	return true;  
             case R.id.item1:
+            	addRSSFeed();
 
             	
             default:
