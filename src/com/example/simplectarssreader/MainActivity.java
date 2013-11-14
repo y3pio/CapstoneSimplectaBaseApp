@@ -6,11 +6,13 @@ package com.example.simplectarssreader;
 import java.io.File;
 import java.util.ArrayList;
 
+import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.graphics.Bitmap;
+import android.os.Build;
 import android.os.Bundle;
 import android.text.Editable;
 import android.util.Log;
@@ -21,12 +23,11 @@ import android.view.View.OnClickListener;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
-import android.widget.Button;
-import android.widget.EditText;
-import android.widget.Toast;
+import android.widget.*;
 
 
-public class MainActivity extends Activity implements OnClickListener{
+@TargetApi(Build.VERSION_CODES.HONEYCOMB)
+public class MainActivity extends Activity implements OnClickListener, SearchView.OnQueryTextListener {
 	final static String TAG = "MainActivity";
 	
 	public static File filesDir;
@@ -43,6 +44,8 @@ public class MainActivity extends Activity implements OnClickListener{
 	public static String URLtoLoad, simplectaMain, simplectaFeedsList;
 	
 	public static boolean check;
+	
+	private SearchView mSearchView;
 	
 	Context context;
 	
@@ -225,6 +228,8 @@ Log.d(TAG, "not logged in yet");
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.main, menu);
+		SearchView searchView = (SearchView) menu.findItem(R.id.action_search_icon).getActionView();
+        searchView.setOnQueryTextListener(this);
 		return super.onCreateOptionsMenu(menu);
 	}
 
@@ -372,5 +377,36 @@ Log.d(TAG, "submitForm = " + submitForm);
             }
         });
 	}
+
+	@Override
+	public boolean onQueryTextChange(String newText) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean onQueryTextSubmit(String query) {
+		// TODO Auto-generated method stub
+		String indexPage = null;
+		indexPage = "<head><title>Simplecta RSS</title><link rel=\"stylesheet\" media=\"all\" href=\"style.css\" type=\"text/css\"></head>"
+				+	"<body><div class=\"wrap\"><div class=\"content\">"; 
+		//This takes a while to load. Links somehow not working
+		for(int i=0; i<MainActivity.feeds.size(); i++){
+			//System.out.println(MainActivity.feeds.get(i).getURL());
+			if(MainActivity.feeds.get(i).getDesc().contains(query) || MainActivity.feeds.get(i).getURL().contains(query) || 
+					MainActivity.feeds.get(i).getCategory().contains(query)){
+			indexPage+="<article class=\"underline\"><div class=\"post-content\"><h2><a href=\""+MainActivity.feeds.get(i).getURL()
+			+"\" /a>" + MainActivity.feeds.get(i).getDesc() +"</a></h2><p>" + MainActivity.feeds.get(i).getCategory()
+			/*+"<input type=\"checkbox\" name=\"markBox\" value=\"markRead\">"*/	
+			+"</p></div><div class=\"clear\"></div></article>";
+			}
+		}
+		indexPage+="</div></body></html>";
+		MainActivity.wvUser.setVisibility(View.VISIBLE);
+		MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", indexPage, "text/html", "UTF-8", null);
+		return false;
+	}
+	
+	
 
 }//end of mainactivity

@@ -11,8 +11,8 @@
     <color name="white">#FFFFFF</color>
     <color name="black">#000000</color>
     
-  	<string name="title_MainActivity">Simplecta RSS Reader</string>
-    <string name="title_LoadActivity">Simplecta RSS Reader</string>
+  	<string name="title_MainActivity">Simplecta!</string>
+    <string name="title_LoadActivity">Simplecta!</string>
     <string name="LoadActivity_text">Loading your feeds</string>
     <string name="title_RSSActivity">Your RSS Feeds</string>
     
