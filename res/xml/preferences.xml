@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    android:title="title_SettingsActivity">
+    
+	<PreferenceCategory android:title="View Settings">
+	    <CheckBoxPreference 
+		    android:key="preload_checkbox"
+		    android:defaultValue="false"
+			android:title="Preload feeds"
+			android:summary="Provides a smoother experience by loading your feeds in the background instead of on demand">	    
+		</CheckBoxPreference>
+		<CheckBoxPreference 
+		    android:key="detailed_mainpage_checkbox"
+		    android:defaultValue="false"
+			android:title="Detailed Main Page"
+			android:summary="Display more information about feeds whenever possible, will slightly increase load time and data usage"
+			android:dependency="preload_checkbox">	    
+		</CheckBoxPreference>
+		<CheckBoxPreference 
+		    android:key="auto_refresh_checkbox"
+		    android:defaultValue="false"
+			android:title="Automatically Refresh"
+			android:summary="Updates display after reading an RSS feed">	    
+		</CheckBoxPreference>				
+	</PreferenceCategory>
+	
+</PreferenceScreen>

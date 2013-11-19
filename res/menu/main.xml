@@ -1,17 +1,22 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android" >
-    
+	
+	
     <item android:id="@+id/action_search_icon"
           android:title="@string/action_search"
           android:showAsAction="always"
           android:actionViewClass="android.widget.SearchView" />
-    
     <item
         android:id="@+id/action_settings"
         android:orderInCategory="100"
         android:showAsAction="never"
         android:title="@string/action_settings"/>
     <item android:id="@+id/action_logout" android:title="@string/action_logout" android:showAsAction="never"></item>
+    <item android:id="@+id/action_manage" android:title="Manage Feeds"></item>
+    <item android:id="@+id/action_markAllRead" android:title="Mark All Read"></item>
+    <item android:id="@+id/action_reload" android:title="Refresh"></item>
     <item android:id="@+id/item1" android:title="1"></item>
-
-    
+    <item android:id="@+id/item2" android:title="2"></item>
+    <item android:id="@+id/item3" android:title="3"></item>
+	<item android:id="@+id/item4" android:title="4"></item>
+	<item android:id="@+id/item5" android:title="5"></item>
 </menu>

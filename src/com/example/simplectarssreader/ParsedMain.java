@@ -2,7 +2,7 @@ package com.example.simplectarssreader;
 
 public class ParsedMain {
 	
-	String url, urlKey, desc, category, rssUrl;
+	String url, urlKey, desc, category, rssUrl, key;
 	
 	protected ParsedMain(String a, String b, String c, String d, String e){
 		url = a;

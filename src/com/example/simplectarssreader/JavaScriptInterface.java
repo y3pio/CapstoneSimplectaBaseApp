@@ -1,8 +1,8 @@
 package com.example.simplectarssreader;
 
 import android.content.Context;
-import android.util.Log;
 import android.webkit.JavascriptInterface;
+import android.widget.Toast;
 
 public class JavaScriptInterface {
 	final static String TAG = "JavaScriptInterface";
@@ -32,6 +32,11 @@ public class JavaScriptInterface {
 	@JavascriptInterface
     public void processHTML(String html){
 		
+    }
+	
+	@JavascriptInterface
+    public void showToast(String toast) {
+        Toast.makeText(context, toast, Toast.LENGTH_SHORT).show();
     }
 	
 	

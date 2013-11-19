@@ -3,6 +3,9 @@ package com.example.simplectarssreader;
 public class ParsedXML {
 	String link, desc, title, category;
 	
+	protected ParsedXML(String d){
+		category = d;
+	}
 	protected ParsedXML(String a, String b, String c, String d){
 		link = a;
 		desc = b;
