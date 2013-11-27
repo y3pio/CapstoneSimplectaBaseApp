@@ -156,8 +156,16 @@ public class getPage{
 				
 		MainActivity.wvMain.loadUrl(context.getString(R.string.simplecta_feeds_URL));
 	}
-			
+	
 	public void getSimplectaFeedsList(){
+		activity.runOnUiThread(new Runnable() {//use this because webview should be run on ui threads
+			public void run() {
+				getSimplectaFeedsList(false);
+			}
+		});
+	}
+	
+	public void getSimplectaFeedsList(final Boolean isManageFeeds){
 		Log.d(TAG, "getSimplectaFeedsList()");
 		MainActivity.wvMain.addJavascriptInterface(new JavaScriptInterface(context, TAG){
 			@SuppressWarnings("unused")
@@ -167,6 +175,16 @@ public class getPage{
 				new Parse(context, TAG, html).BrianParse();
 				MainActivity.loaded_managefeeds = true;
 				Log.d(TAG, "getSimplectaFeedsList() get html done");
+				
+				if (isManageFeeds == true){
+					Log.d(TAG, "isManageFeeds = true, load managefeeds page");
+					activity.runOnUiThread(new Runnable() {//use this because webview should be run on ui threads
+						public void run() {
+							MainActivity.wvManageFeeds.loadDataWithBaseURL("file:///android_asset/", new BuildView(context, TAG).buildManageFeedsPage(), "text/html", "UTF-8", null);
+					    	display("managefeeds");
+						}
+					});
+				}
 				if (prefs.getBoolean("preload_checkbox", false) == true){
 					getXMLs();
 				}
@@ -237,6 +255,8 @@ public class getPage{
 		else if (view.equalsIgnoreCase("login")){
 			MainActivity.currPage = ("login");
 			
+			MainActivity.loadText.setVisibility(View.GONE);
+			
 			MainActivity.wvUser.setVisibility(View.GONE);
 			
 			MainActivity.wvMain.setVisibility(View.VISIBLE);
@@ -299,8 +319,7 @@ public class getPage{
 		cleanedText = cleanedText.replace("&lt;", "<");
 		cleanedText = cleanedText.replace("&#34;", "\"");
 		cleanedText = cleanedText.replace("&gt;", ">");
-		cleanedText = cleanedText.replace("&amp", "&");
-		
+		cleanedText = cleanedText.replace("&amp", "&");		
 		return cleanedText;
 	}
 

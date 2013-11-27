@@ -21,7 +21,7 @@
 		    android:key="auto_refresh_checkbox"
 		    android:defaultValue="false"
 			android:title="Automatically Refresh"
-			android:summary="Updates display after reading an RSS feed">	    
+			android:summary="Updates display after reading an RSS feed on the main page">	    
 		</CheckBoxPreference>				
 	</PreferenceCategory>
 	

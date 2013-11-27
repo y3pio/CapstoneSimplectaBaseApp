@@ -28,7 +28,7 @@ class RequestTask extends AsyncTask<String, String, String>{
 	boolean isLoggedIn;
 	Context context;
 	Activity activity;
-	
+	String chTitle;
 	
 	protected RequestTask(Context c, String calledFrom, Activity a){
 		context = c;
@@ -73,54 +73,67 @@ class RequestTask extends AsyncTask<String, String, String>{
     protected void onPostExecute(String result) {
         super.onPostExecute(result);
         Log.d(TAG, "onPostExecute()");
+        
 		XMLParse(htmlString);
 		
-		if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean("preload_checkbox", false) == true){
-			if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean("detailed_mainpage_checkbox", false) == true){
-				boolean finishedWait = false;
-				
-				int counter = 0;
-				for (int i=0; i<MainActivity.isParseComplete.size(); i++){
-					if (MainActivity.isParseComplete.get(i) == true){
-						counter++;
-					}
+		if (MainActivity.isLoadXML == true) {
+			MainActivity.isLoadXML = false;
+			MainActivity.isRefresh = false;
+			Log.d(TAG, "get and load xml");
+			activity.runOnUiThread(new Runnable() {//use this because webview should be run on ui threads
+				public void run() {
+					MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context,TAG).buildMainPageFeed(chTitle), "text/html", "UTF-8", null);
+					new getPage(context, TAG).display("feeds");
 				}
-				if (counter >= MainActivity.isParseComplete.size()){
-					finishedWait = true;
-				}		
-				if (finishedWait == true){
-					activity.runOnUiThread(new Runnable() {//use this because webview should be run on ui threads
-						public void run() {
-							if (MainActivity.isRefresh == false){
-								Log.d(TAG, "refresh = false, build mainpagedetailed");
-								MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context, TAG).buildMainPageDetailed(), "text/html", "UTF-8", null);
-								new getPage(context, TAG, activity).display("feeds");
-							}
-							else if (MainActivity.isRefresh == true){
-								Log.d(TAG, "isRefresh");
-								MainActivity.isRefresh = false;
-								if (MainActivity.prevPage == "feeds"){
-									if (MainActivity.feedsPage.contains("feed-")){
-										
-									}
-									else {
-										MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context, TAG).buildMainPageDetailed(), "text/html", "UTF-8", null);
+			});
+		}
+		else{
+			if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean("preload_checkbox", false) == true){
+				if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean("detailed_mainpage_checkbox", false) == true){
+					boolean finishedWait = false;
+					
+					int counter = 0;
+					for (int i=0; i<MainActivity.isParseComplete.size(); i++){
+						if (MainActivity.isParseComplete.get(i) == true){
+							counter++;
+						}
+					}
+					if (counter >= MainActivity.isParseComplete.size()){
+						finishedWait = true;
+					}		
+					if (finishedWait == true){
+						activity.runOnUiThread(new Runnable() {//use this because webview should be run on ui threads
+							public void run() {
+								if (MainActivity.isRefresh == false){
+									Log.d(TAG, "refresh = false, build mainpagedetailed");
+									MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context, TAG).buildMainPageDetailed(), "text/html", "UTF-8", null);
+									new getPage(context, TAG, activity).display("feeds");
+								}
+								else if (MainActivity.isRefresh == true){
+									Log.d(TAG, "isRefresh");
+									MainActivity.isRefresh = false;
+									if (MainActivity.prevPage == "feeds"){
+										if (MainActivity.feedsPage.contains("feed-")){
+											MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context, TAG).buildMainPageFeed(MainActivity.feedsPage.substring(5)), "text/html", "UTF-8", null);
+										}
+										else {
+											MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context, TAG).buildMainPageDetailed(), "text/html", "UTF-8", null);										
+										}
 										new getPage(context, TAG, activity).display("feeds");
 									}
-								}
-								if (MainActivity.prevPage == "managefeeds"){
-									MainActivity.wvManageFeeds.loadDataWithBaseURL("file:///android_asset/", new BuildView(context, TAG).buildManageFeedsPage(), "text/html", "UTF-8", null);
-									new getPage(context, TAG, activity).display("managefeeds");
+									if (MainActivity.prevPage == "managefeeds"){
+										MainActivity.wvManageFeeds.loadDataWithBaseURL("file:///android_asset/", new BuildView(context, TAG).buildManageFeedsPage(), "text/html", "UTF-8", null);
+										new getPage(context, TAG, activity).display("managefeeds");
+									}
 								}
 							}
-						}
-					});			   
+						});			   
+					}
 				}
 			}
 		}
-		else {
-			Log.d(TAG, "get xml only");
-		}
+		
+		
     }
     
     public void XMLParse(String html){//used to parse individual rss feeds
@@ -131,6 +144,7 @@ class RequestTask extends AsyncTask<String, String, String>{
 		
 		String channelInfo = htmlString.substring(channelstart,channelend);
 		String channelTitle = channelInfo.substring(channelInfo.indexOf("<title>")+7, channelInfo.indexOf("</title>"));
+		chTitle = channelTitle;
 		
 		ArrayList<ParsedXML> xmlItems = new ArrayList<ParsedXML>();
 		
@@ -168,7 +182,7 @@ class RequestTask extends AsyncTask<String, String, String>{
 				while(iDesc.indexOf("%2f") != -1){
 					iDesc = iDesc.replace("%2f", "/");
 				}
-				//Log.d(TAG, iDesc);
+
 				xmlItems.add(new ParsedXML(iLink, iDesc, iTitle, channelTitle));
 				
 				htmlString = htmlString.substring(bookmarkend);
@@ -176,13 +190,15 @@ class RequestTask extends AsyncTask<String, String, String>{
 		}	
 		MainActivity.XMLitems.add(xmlItems);
 		
-		//checklist for all requesttasks, keeps track of which request tasks are finished for loadMainPageDetailed()
-		boolean marked = false;
-		for (int i=0; i<MainActivity.isParseComplete.size(); i++){
-			if (marked == false){
-				if (MainActivity.isParseComplete.get(i) == false){
-					MainActivity.isParseComplete.set(i, true);
-					marked = true;
+		if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean("preload_checkbox", false) == true){
+			//checklist for all requesttasks, keeps track of which request tasks are finished for loadMainPageDetailed()
+			boolean marked = false;
+			for (int i=0; i<MainActivity.isParseComplete.size(); i++){
+				if (marked == false){
+					if (MainActivity.isParseComplete.get(i) == false){
+						MainActivity.isParseComplete.set(i, true);
+						marked = true;
+					}
 				}
 			}
 		}

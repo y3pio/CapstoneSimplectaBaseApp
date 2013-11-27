@@ -1,5 +1,6 @@
 package com.example.simplectarssreader;
 
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
@@ -13,10 +14,12 @@ class RSSReaderClient extends WebViewClient{
 	
 	Context context;
 	String fromActivity;
+	Activity activity;
 	
-	protected RSSReaderClient(Context c, String calledFrom){
+	protected RSSReaderClient(Context c, String calledFrom, Activity a){
 		context = c;
 		fromActivity = calledFrom;
+		activity = a;
 	}
 	
 	@Override
@@ -81,8 +84,33 @@ class RSSReaderClient extends WebViewClient{
 			context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(parseUrl)));
 		}
 		else if (url.charAt(0) == '2'){//clicked view on managefeeds
-			//new getPage(context, TAG).display("load");
-			//MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context, TAG).buildMainPageFeed("asdf"), "text/html", "UTF-8", null);
+			url = new Parse(context, TAG).clean(url.substring(1));
+			Log.d(TAG, url);
+			Boolean isXMLLoaded = false;
+			for (int i=0; i<MainActivity.XMLitems.size(); i++){
+				if (MainActivity.XMLitems.get(i).get(0).getCategory().equalsIgnoreCase(url)){
+					Log.d(TAG, "already loaded, set up display " + MainActivity.XMLitems.get(i).get(0).getCategory());
+					isXMLLoaded = true;
+					
+					MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context,TAG).buildMainPageFeed(i), "text/html", "UTF-8", null);
+					new getPage(context, TAG).display("feeds");
+				}
+			}
+			if (isXMLLoaded == false){
+				Log.d(TAG,  "xml not loaded");
+				MainActivity.isLoadXML = true;
+				new getPage(context,TAG).display("load");
+				for (int i=0; i<MainActivity.objectList.size(); i++){
+					Log.d(TAG,MainActivity.objectList.get(i).getTitle());
+					if (MainActivity.objectList.get(i).getTitle().equalsIgnoreCase(url)){
+						String fixedUrl = MainActivity.objectList.get(i).getUrl();
+						fixedUrl = new Parse(context,TAG).clean(fixedUrl);
+						fixedUrl = fixedUrl.substring(fixedUrl.indexOf("http"));
+						Log.d(TAG, "found " + fixedUrl);
+						new RequestTask(context, TAG, activity).execute(fixedUrl);
+					}
+				}
+			}
 		}
 		else if (url.charAt(0) == '3'){//clicked unsubscribe
 			url = url.substring(2);
@@ -94,7 +122,11 @@ class RSSReaderClient extends WebViewClient{
 			MainActivity.wvMain.loadUrl(unsub);
 		}
 		else if (url.charAt(0) == '4'){//clicked a link on individual rss feed page
-			
+			url = url.substring(url.indexOf("http"));
+			context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+		}
+		else {
+			context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
 		}
 		return true;
 	}

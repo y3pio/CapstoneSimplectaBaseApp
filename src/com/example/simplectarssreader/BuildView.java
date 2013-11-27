@@ -16,6 +16,7 @@ final static String TAG = "BuildView";
 	}
 	
 	public String buildMainPageSimple(){
+		Log.d(TAG, "buildMainPageSimple()");
 		String indexPage = null;
 		indexPage = "<head><title>Simplecta RSS</title><link rel=\"stylesheet\" media=\"all\" href=\"style.css\" type=\"text/css\"></head>"
 				+	"<body><div class=\"wrap\"><div class=\"content\">"; 
@@ -33,6 +34,7 @@ final static String TAG = "BuildView";
 	}
 	
 	public String buildMainPageDetailed(){
+		Log.d(TAG, "buildMainPageDetailed()");
 		String indexPage, extendedDesc = "";
 		indexPage = "<head><title>Simplecta RSS</title><link rel=\"stylesheet\" media=\"all\" href=\"style.css\" type=\"text/css\"></head>"
 				+	"<body><div class=\"wrap\"><div class=\"content\">"; 
@@ -83,6 +85,7 @@ final static String TAG = "BuildView";
 	}
 	
 	public String buildMainPageFeed(String feedTitle){
+		Log.d(TAG, "buildMainPageFeed()");
 		String indexPage, extendedDesc = "";
 		int index = -1;
 		for (int i=0; i<MainActivity.XMLitems.size(); i++){
@@ -93,7 +96,7 @@ final static String TAG = "BuildView";
 		
 		indexPage = "<head><title>Simplecta RSS</title><link rel=\"stylesheet\" media=\"all\" href=\"style.css\" type=\"text/css\"></head>"
 				+	"<body><div class=\"wrap\"><div class=\"content\">"; 
-		if (index < -1){
+		if (index > -1){
 			for(int i=0; i<MainActivity.XMLitems.get(index).size(); i++){
 				indexPage+="<article class=\"underline\"><div class=\"post-content\">"
 						+"<h2><a href=\""+ "4" + MainActivity.XMLitems.get(index).get(i).getLink() + "\" /a>"+ MainActivity.XMLitems.get(index).get(i).getTitle() +"</a></h2>"
@@ -105,6 +108,58 @@ final static String TAG = "BuildView";
 		}
 		indexPage+="</div></body></html>";
 		MainActivity.feedsPage = "feed-" + feedTitle;
+		return indexPage;
+	}
+	
+	public String buildMainPageFeed(int index){
+		Log.d(TAG, "buildMainPageFeed()");
+		String indexPage, extendedDesc = "";
+		String feedTitle = MainActivity.XMLitems.get(index).get(0).getCategory();
+		
+		indexPage = "<head><title>Simplecta RSS</title><link rel=\"stylesheet\" media=\"all\" href=\"style.css\" type=\"text/css\"></head>"
+				+	"<body><div class=\"wrap\"><div class=\"content\">"; 
+		
+		for(int i=0; i<MainActivity.XMLitems.get(index).size(); i++){
+			indexPage+="<article class=\"underline\"><div class=\"post-content\">"
+					+"<h2><a href=\""+ "4" + MainActivity.XMLitems.get(index).get(i).getLink() + "\" /a>"+ MainActivity.XMLitems.get(index).get(i).getTitle() +"</a></h2>"
+					+"<p>"
+					+MainActivity.XMLitems.get(index).get(i).getDesc()
+					+"</p>" 
+					+"</div><div class=\"clear\"></div></article>";
+		}
+
+		indexPage+="</div></body></html>";
+		Log.d(TAG,  "feedsPage = feed-" + feedTitle);
+		MainActivity.feedsPage = "feed-" + feedTitle;
+		return indexPage;
+	}
+	
+	public String buildMainPageNewest(int howMany){
+		Log.d(TAG, "buildMainPageNewest()");
+		String indexPage;
+		
+		indexPage = "<head><title>Simplecta RSS</title><link rel=\"stylesheet\" media=\"all\" href=\"style.css\" type=\"text/css\"></head>"
+				+	"<body><div class=\"wrap\"><div class=\"content\">"; 
+		
+		for (int i=0; i<MainActivity.XMLitems.size(); i++){
+			int z = howMany;
+			if (MainActivity.XMLitems.get(i).size() < howMany){
+				z = MainActivity.XMLitems.get(i).size();
+			}
+			for(int j=0; j<z; j++){
+				indexPage+="<article class=\"underline\"><div class=\"post-content\">"
+					+"<h2><a href=\""+ "4" + MainActivity.XMLitems.get(i).get(j).getLink() + "\" /a>"+ MainActivity.XMLitems.get(i).get(j).getTitle() +"</a></h2>"
+					+"<p>"
+					+MainActivity.XMLitems.get(i).get(j).getDesc()
+					+"<b>" + MainActivity.XMLitems.get(i).get(j).getCategory() + "</b>"
+					+"</p>"
+					+"</div><div class=\"clear\"></div></article>";	
+			}
+		}
+		
+		indexPage+="</div></body></html>";
+		Log.d(TAG,  "feedsPage = newest");
+		MainActivity.feedsPage = "newest";
 		return indexPage;
 	}
 	

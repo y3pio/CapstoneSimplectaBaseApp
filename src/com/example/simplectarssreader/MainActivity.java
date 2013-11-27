@@ -5,26 +5,11 @@ package com.example.simplectarssreader;
 
 /*
  * to do list:
-x* create managefeed
- *  display individual feed page on [view] click, xmlget if not already loaded
-x*  unsub, adjust display, remove from arraylist
-x* create addrssfeeds
-x*  successful subscribe rss 
- *   needs to xmlget rss feed, update display, clear textbox
- *   currently calls refresh as lazy method
- * 	unsuccessful subscribe needs warn and/or correction
-x* create refresh
- *  preload = true
-x*   handle refresh from main page
-x*   handle refresh from manage
- *   handle refresh from individual feed
- *  preload = false
-x*   handle refresh from main page
-x*   handle refresh from manage
- *   handle refresh from individual feed
 x* create a function in parse that will fix all the html garbage for example %2f = /
-x* create markallread
- * handle back
+ *  fix code to use this function
+ * create newest 5 view
+ *  add to back
+ *  add to refresh
  */
 import java.io.File;
 import java.util.ArrayList;
@@ -35,6 +20,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.Editable;
@@ -62,8 +48,10 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 	
 	public static Button manageFeedsDone, manageFeedsAdd;
 	public static TextView loadText;
+	
+	public static EditText manageFeedsEditText;
 
-	public static boolean isLoggedIn, isRefresh;
+	public static boolean isLoggedIn, isRefresh, isLoadXML, isAddRSSFeed, isPrefChanged;
 	
 	public static boolean loaded_feeds, loaded_managefeeds;
 	public static ArrayList<String> loaded_individualfeed;
@@ -80,6 +68,7 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 	
 	Menu mainMenu;
 	SharedPreferences prefs;
+	OnSharedPreferenceChangeListener listener;
 	//PreferenceManager.getDefaultSharedPreferences(c).getBoolean("sound_enable_checkbox", true) == true
 	
 	@Override	protected void onCreate(Bundle savedInstanceState) {
@@ -92,6 +81,17 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 		
 		PreferenceManager.setDefaultValues(this, R.xml.preferences, false);
 		prefs = PreferenceManager.getDefaultSharedPreferences(this); 
+		listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
+			public void onSharedPreferenceChanged(SharedPreferences prefs, String key) {
+				Toast.makeText(context, key, Toast.LENGTH_LONG);
+				Log.d(TAG, "pref change: " + key);
+				if (key.equals("preload_checkbox") || key.equals("detailed_mainpage_checkbox")){
+					Log.d(TAG, "isPrefChanged = true");
+					isPrefChanged = true;
+				}
+			}
+		};
+		prefs.registerOnSharedPreferenceChangeListener(listener);
 		
 		loaded_feeds = false;	//check if mainpage is loaded
 		loaded_managefeeds = false;	//check if feed list from managefeed is loaded
@@ -109,12 +109,15 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 	*/	
 		isRefresh = false;
 		isLoggedIn = false;
+		isLoadXML = false;
+		isAddRSSFeed = false;
+		isPrefChanged = false;
         
 		loadText = (TextView) findViewById(R.id.LoadText);
 		
 		wvUser = (WebView) findViewById(R.id.MainActivity_WebView_User);
 		wvUser.getSettings().setJavaScriptEnabled(true);
-		wvUser.setWebViewClient(new RSSReaderClient(this, TAG));
+		wvUser.setWebViewClient(new RSSReaderClient(this, TAG, activity));
 		wvUser.addJavascriptInterface(new JavaScriptInterface(context, TAG), "Android");
 		
 		wvMain = (WebView) findViewById(R.id.MainActivity_WebView_Main);
@@ -123,7 +126,7 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 		
 		wvManageFeeds = (WebView) findViewById(R.id.MainActivity_WebView_Manage);
 		wvManageFeeds.getSettings().setJavaScriptEnabled(true);
-		wvManageFeeds.setWebViewClient(new RSSReaderClient(this, TAG));
+		wvManageFeeds.setWebViewClient(new RSSReaderClient(this, TAG, activity));
 		manageFeedsDone = (Button) findViewById(R.id.done_button);
 		manageFeedsDone.setOnClickListener(new OnClickListener(){
 			@Override
@@ -145,6 +148,7 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 	}//end of oncreate
 	
 	public void markReadAll(){
+		Log.d(TAG, "markReadAll()");
 		MainActivity.wvMain.setWebViewClient(new WebViewClient() {
 			boolean marked = false;
 			@Override
@@ -152,7 +156,7 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 				if (marked == false){
 					marked = true;
 					wvMain.loadUrl("javascript:$(\".ajax_link\").click();");
-					refresh();
+					//refresh();
 				}			
 			}		
 		});  
@@ -160,7 +164,7 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 		
 	}
 	
-	public void newRSSFeed(String rssURL){
+	public void newRSSFeed(final String rssURL){
 		Log.d(TAG, "newRSSFeed()");
 		final String fillForm = "javascript:void(document.forms[1].url.value=\"" + rssURL + "\");";
 		final String submitForm = "javascript:(document.forms[1].submit());";
@@ -185,7 +189,10 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 						Log.d(TAG, "successfully added new rss feed");
 						loaded_feeds = false;
 						loaded_managefeeds = false;
-						refresh();
+						Toast.makeText(context, "Subscribe successful", Toast.LENGTH_LONG).show();
+						if (isAddRSSFeed = true){
+							manageFeedsEditText.setText("http://");
+						}
 					}
 				}
 			}		
@@ -195,10 +202,14 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 	}
 	
 	public void addRSSFeed(){
+		Log.d(TAG, "addRSSFeed()");
+		isAddRSSFeed = true;
 		final EditText input = new EditText(this);
+		manageFeedsEditText = input;
+		input.setText("http://"); 
     	AlertDialog.Builder builder = new AlertDialog.Builder(this);
     	builder.setTitle("New RSS Feed");
-    	//builder.setMessage("Message");
+    	builder.setMessage("Type in the RSS Feed URL and tap 'Subscribe' to subscribe");
     	builder.setView(input);
     	builder.setNegativeButton("Subscribe", new DialogInterface.OnClickListener(){
     		@Override
@@ -220,18 +231,29 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
         });
     	
     	final AlertDialog addRSS = builder.create();
+    	addRSS.setCanceledOnTouchOutside(false);
     	addRSS.show();
     	addRSS.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(new View.OnClickListener(){            
             @Override
             public void onClick(View v){
                 Editable value = input.getText();
-          	  	newRSSFeed(value.toString());                
+          	  	newRSSFeed(value.toString()); 
             }
         });
     	addRSS.getButton(AlertDialog.BUTTON_NEUTRAL).setOnClickListener(new View.OnClickListener(){            
             @Override
             public void onClick(View v){
-                input.setText("");              
+                input.setText("http://");              
+            }
+        });
+    	addRSS.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener(){            
+            @Override
+            public void onClick(View v){
+            	isAddRSSFeed = false;
+                if (loaded_managefeeds == false){
+                	refresh();
+                }
+                addRSS.dismiss();
             }
         });
 	}
@@ -241,13 +263,20 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 		if (loaded_managefeeds == false){
 			Log.d(TAG, "simplecta feeds list needs to be loaded");
 			new getPage(context, TAG, activity).display("load");
-			new getPage(context, TAG, activity).getSimplectaFeedsList();
+			new getPage(context, TAG, activity).getSimplectaFeedsList(true);
 		}
-		wvManageFeeds.loadDataWithBaseURL("file:///android_asset/", new BuildView(context, TAG).buildManageFeedsPage(), "text/html", "UTF-8", null);
-    	new getPage(context, TAG, activity).display("managefeeds");
+		else {
+			wvManageFeeds.loadDataWithBaseURL("file:///android_asset/", new BuildView(context, TAG).buildManageFeedsPage(), "text/html", "UTF-8", null);
+	    	new getPage(context, TAG, activity).display("managefeeds");
+		}
 	}
 	
 	public void refresh(){
+		Log.d(TAG, "refresh()");
+		if (currPage == "load"){
+			new getPage(context, TAG, activity).SimplectaLogIn();
+			return ;
+		}
 		prevPage = currPage;
 		isRefresh = true;
 		new getPage(context,TAG,activity).display("load");
@@ -255,12 +284,35 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 			new getPage(context,TAG, activity).getSimplectaMain();
 		}
 		else if (prefs.getBoolean("preload_checkbox", false) == false){
-			if (currPage == "feeds"){
-				if (feedsPage == "simple"){
+			if (prevPage == "feeds"){
+				if (feedsPage.equals("simple") || feedsPage.equals("detailed")){
 					new getPage(context,TAG, activity).getSimplectaMain();
 				}
+				else{
+					String pg = feedsPage.substring(5);
+					isLoadXML = true;
+					Log.d(TAG, pg);
+					for (int i=0; i<MainActivity.objectList.size(); i++){
+						Log.d(TAG,MainActivity.objectList.get(i).getTitle());
+						if (MainActivity.objectList.get(i).getTitle().equalsIgnoreCase(pg)){
+							String fixedUrl = MainActivity.objectList.get(i).getUrl();
+							fixedUrl = new Parse(context,TAG).clean(fixedUrl);
+							fixedUrl = fixedUrl.substring(fixedUrl.indexOf("http"));
+							Log.d(TAG, "found " + fixedUrl);
+							new RequestTask(context, TAG, activity).execute(fixedUrl);
+						}
+					}
+				}
+			}
+			if (prevPage == "managefeeds"){
+				new getPage(context,TAG, activity).getSimplectaFeedsList(true);
 			}
 		}
+	}
+	
+	public void newest(int howMany){
+		wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context, TAG).buildMainPageNewest(howMany), "text/html", "UTF-8", null);
+		new getPage(context,TAG,activity).display("feeds");
 	}
 	
 	@Override
@@ -268,17 +320,51 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 	    if ((keyCode == KeyEvent.KEYCODE_BACK)) {
 	    	if (currPage == "login"){
 	    		Log.d(TAG, "confirm exit");
+	    		new AlertDialog.Builder(this)
+	            .setIcon(android.R.drawable.ic_dialog_alert)
+	            .setTitle("Quit the App?")
+	            //.setMessage(R.string.reallyQuit)
+	            .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+	                public void onClick(DialogInterface dialog, int which) {
+	                    MainActivity.this.finish();    
+	                }
+	            })
+	            .setNegativeButton("No", null)
+	            .show();
 	    	}
 	    	else if (currPage == "feeds"){
 	    		if (feedsPage.contains("feed-")){
-	    			Log.d(TAG, "go back to simplecta main page");
+	    			if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean("preload_checkbox", false) == true){
+	    				if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean("detailed_mainpage_checkbox", false) == true){
+	    					MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context,TAG).buildMainPageSimple(), "text/html", "UTF-8", null);
+	    				}
+	    				else {
+	    					MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context,TAG).buildMainPageDetailed(), "text/html", "UTF-8", null);
+	    				}
+	    			}
+	    			else {
+	    				MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context,TAG).buildMainPageSimple(), "text/html", "UTF-8", null);
+	    			}
+	    			new getPage(context, TAG, activity).display("feeds");
 	    		}
 	    		else {
-	    			Log.d(TAG, "logout of exit");
+	    			Log.d(TAG, "logout or exit");
+	    			new AlertDialog.Builder(this)
+		            .setIcon(android.R.drawable.ic_dialog_alert)
+		            .setTitle("Quit the App?")
+		            //.setMessage(R.string.reallyQuit)
+		            .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+		                public void onClick(DialogInterface dialog, int which) {
+		                    MainActivity.this.finish();    
+		                }
+		            })
+		            .setNegativeButton("No", null)
+		            .show();
 	    		}
 	    	}
 	    	else if (currPage == "managefeeds"){
 	    		Log.d(TAG, "go back to simplecta main page");
+	    		new getPage(context,TAG,activity).display("feeds");
 	    	}
 	    	else {
 	    		Log.d(TAG, "unhandled event on back");
@@ -301,10 +387,9 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 	@Override
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle item selection
-		Log.d("SEARCH TAG", "CLICKED OPTIONS!!");
         switch (item.getItemId()) {
         	case R.id.action_search_icon:
-        	Toast.makeText(this, "HELLO SEARCH!!", Toast.LENGTH_SHORT).show();
+        		;
         	return true;
             case R.id.action_settings:
                Intent settings = new Intent(this, SettingsActivity.class);
@@ -313,10 +398,8 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
             case R.id.action_logout:
             	new getPage(context, TAG, activity).SimplectaLogOut();
             	return true; 
-
             case R.id.action_manage:
-            	wvManageFeeds.loadDataWithBaseURL("file:///android_asset/", new BuildView(context, TAG).buildManageFeedsPage(), "text/html", "UTF-8", null);
-            	new getPage(context, TAG, activity).display("managefeeds");
+            	manageFeeds();
             	return true;
             case R.id.action_reload:
             	//new getPage(context,TAG,activity).display("load");
@@ -339,6 +422,7 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
             	new getPage(context, TAG, activity).display("load");
             	return true; 
             case R.id.item5:
+            	newest(5);
             	return true; 
             default:
                 return super.onOptionsItemSelected(item);
@@ -380,6 +464,23 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 	public void onClick(View v) {
 		// TODO Auto-generated method stub
 		
+	}
+	
+	@Override
+	public void onPause(){
+	    super.onPause();
+	    Log.d(TAG, "onPause()");
+	}
+
+	@Override
+	public void onResume(){
+	    super.onResume();
+	    Log.d(TAG, "onResume()");
+	    if (isPrefChanged == true){
+	    	Log.d(TAG, "pref has been changed");
+	    	isPrefChanged = false;
+	    	refresh();    	
+	    }
 	}
 
 	

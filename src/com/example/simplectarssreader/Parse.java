@@ -17,7 +17,11 @@ public class Parse {
 		html = htmlstring;
 		//Log.d(TAG, "------------Parse---------");
 	}
-	
+	protected Parse(Context c, String calledFrom){
+		context = c;
+		fromActivity = calledFrom;
+		html = "";
+	}
 	protected Parse(Context c, String calledFrom, String htmlstring){
 		context = c;
 		fromActivity = calledFrom;
@@ -65,6 +69,18 @@ public class Parse {
 			}
 		}
 		Log.d(TAG, "JasonParse() done");
+	}
+	
+	public String clean(String text){
+		String cleanText = text;
+		cleanText = cleanText.replace("%20", " ");
+		cleanText = cleanText.replace("%3a", ":");
+		cleanText = cleanText.replace("%2f", "/");
+		cleanText = cleanText.replace("&lt;", "<");
+		cleanText = cleanText.replace("&#34;", "\"");
+		cleanText = cleanText.replace("&gt;", ">");
+		cleanText = cleanText.replace("&amp", "&");	
+		return cleanText;
 	}
 	
 }
