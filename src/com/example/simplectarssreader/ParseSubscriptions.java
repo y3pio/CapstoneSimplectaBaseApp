@@ -1,28 +1,28 @@
 package com.example.simplectarssreader;
 
 public class ParseSubscriptions {
-	protected String url;
-	protected String title;
+	protected String channelLink;
+	protected String channelTitle;
 	protected String unsubscribe;
 	
 	protected ParseSubscriptions(String u, String t, String s)
 	{
-		url = u;
-		title = t;
+		channelLink = u;
+		channelTitle = t;
 		unsubscribe = s;
 	}
 	
-	public String getUrl()
+	public String getChannelLink()
 	{
-		return url;
+		return channelLink;
 	}
 	
-	public String getTitle()
+	public String getChannelTitle()
 	{
-		return title;
+		return channelTitle;
 	}
 	
-	public String getSub()
+	public String getChannelUnsubLink()
 	{
 		return unsubscribe;
 	}

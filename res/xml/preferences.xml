@@ -6,20 +6,20 @@
 	<PreferenceCategory android:title="View Settings">
 	    <CheckBoxPreference 
 		    android:key="preload_checkbox"
-		    android:defaultValue="false"
+		    android:defaultValue="true"
 			android:title="Preload feeds"
-			android:summary="Provides a smoother experience by loading your feeds in the background instead of on demand">	    
+			android:summary="Provides better experience by loading feeds in the background after startup">	    
 		</CheckBoxPreference>
-		<CheckBoxPreference 
-		    android:key="detailed_mainpage_checkbox"
-		    android:defaultValue="false"
-			android:title="Detailed Main Page"
-			android:summary="Display more information about feeds whenever possible, will slightly increase load time and data usage"
-			android:dependency="preload_checkbox">	    
+	    <CheckBoxPreference 
+		    android:key="short_summary_checkbox"
+		    android:dependency="preload_checkbox"
+		    android:defaultValue="true"
+			android:title="Short Summary"
+			android:summary="Show a short summary of feed article if possible">	    
 		</CheckBoxPreference>
 		<CheckBoxPreference 
 		    android:key="auto_refresh_checkbox"
-		    android:defaultValue="false"
+		    android:defaultValue="true"
 			android:title="Automatically Refresh"
 			android:summary="Updates display after reading an RSS feed on the main page">	    
 		</CheckBoxPreference>				

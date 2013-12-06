@@ -1,29 +1,26 @@
 package com.example.simplectarssreader;
 
 public class ParsedXML {
-	String link, desc, title, category;
-	
-	protected ParsedXML(String d){
-		category = d;
-	}
+	String itemLink, itemDesc, itemTitle, channelTitle;
+
 	protected ParsedXML(String a, String b, String c, String d){
-		link = a;
-		desc = b;
-		title = c;
-		category = d;
+		itemLink = a;
+		itemDesc = b;
+		itemTitle = c;
+		channelTitle = d;
 	}
 	
-	public String getLink(){
-		return link;
+	public String getItemLink(){
+		return itemLink;
 	}
-	public String getTitle(){
-		return title;
+	public String getItemTitle(){
+		return itemTitle;
 	}
-	public String getDesc(){
-		return desc;
+	public String getItemDesc(){
+		return itemDesc;
 	}
-	public String getCategory(){
-		return category;
+	public String getChannelTitle(){
+		return channelTitle;
 	}
 
 }

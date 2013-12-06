@@ -1,7 +1,7 @@
 package com.example.simplectarssreader;
 
 //use this filter for logcat to get rid of message with those tags
-//tag:^(?!(Choreographer|dalvikvm|libEGL|EGL_emulation|cutils-trace))
+//tag:^(?!(Choreographer|dalvikvm|libEGL|EGL_emulation|cutils-trace|TilesManager))
 
 /*
  * to do list:
@@ -14,6 +14,7 @@ x* create a function in parse that will fix all the html garbage for example %2f
 import java.io.File;
 import java.util.ArrayList;
 
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.Context;
@@ -24,7 +25,9 @@ import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.Editable;
+import android.text.InputType;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.KeyEvent;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -39,9 +42,11 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 
+@SuppressLint("SetJavaScriptEnabled")
 public class MainActivity extends Activity implements OnClickListener, SearchView.OnQueryTextListener{
 	final static String TAG = "MainActivity";
 	
+	public static String URLtoLoad;
 	public static File filesDir;
 	
 	public static WebView wvMain, wvUser, wvManageFeeds;
@@ -51,17 +56,17 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 	
 	public static EditText manageFeedsEditText;
 
-	public static boolean isLoggedIn, isRefresh, isLoadXML, isAddRSSFeed, isPrefChanged;
+	public static boolean isLoggedIn, isRefresh, isAddRSSFeed, isPrefChanged;
 	
-	public static boolean loaded_feeds, loaded_managefeeds;
+	public static boolean loaded_feeds, loaded_managefeeds, loaded_main;
 	public static ArrayList<String> loaded_individualfeed;
+	public static ArrayList<Boolean> isParseComplete;
 	
 	public static ArrayList<ParsedMain> feeds;
 	public static ArrayList<ParseSubscriptions> objectList;
 	public static ArrayList<ArrayList<ParsedXML>> XMLitems;
-	public static ArrayList<Boolean> isParseComplete;
 	
-	public static String URLtoLoad, currPage, feedsPage, prevPage;
+	public static String currPage, prevPage;
 	
 	Context context;
 	Activity activity;
@@ -69,9 +74,9 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 	Menu mainMenu;
 	SharedPreferences prefs;
 	OnSharedPreferenceChangeListener listener;
-	//PreferenceManager.getDefaultSharedPreferences(c).getBoolean("sound_enable_checkbox", true) == true
 	
-	@Override	protected void onCreate(Bundle savedInstanceState) {
+	@Override	
+	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);	
 		setContentView(R.layout.activity_main);
 		Log.d(TAG, "-------------START APP----------");
@@ -83,9 +88,8 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 		prefs = PreferenceManager.getDefaultSharedPreferences(this); 
 		listener = new SharedPreferences.OnSharedPreferenceChangeListener() {
 			public void onSharedPreferenceChanged(SharedPreferences prefs, String key) {
-				Toast.makeText(context, key, Toast.LENGTH_LONG);
 				Log.d(TAG, "pref change: " + key);
-				if (key.equals("preload_checkbox") || key.equals("detailed_mainpage_checkbox")){
+				if (key.equals("preload_checkbox") || key.equals("short_summary_checkbox")){
 					Log.d(TAG, "isPrefChanged = true");
 					isPrefChanged = true;
 				}
@@ -93,9 +97,9 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 		};
 		prefs.registerOnSharedPreferenceChangeListener(listener);
 		
+		loaded_main = false;
 		loaded_feeds = false;	//check if mainpage is loaded
 		loaded_managefeeds = false;	//check if feed list from managefeed is loaded
-		loaded_individualfeed = new ArrayList<String>();	//string of title of rss feed, track which are loaded
 		
 		feeds = new ArrayList<ParsedMain>(); 		//parsed main simplecta page 
 		objectList = new ArrayList<ParseSubscriptions>();	//parsed subscription list
@@ -107,9 +111,9 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
         filesDir = new File (sdCard.getAbsolutePath() + "/Android/data/com.example.simplectarssreader");
         filesDir.mkdirs();
 	*/	
+		
 		isRefresh = false;
 		isLoggedIn = false;
-		isLoadXML = false;
 		isAddRSSFeed = false;
 		isPrefChanged = false;
         
@@ -131,7 +135,7 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 		manageFeedsDone.setOnClickListener(new OnClickListener(){
 			@Override
 			public void onClick(View v){
-				new getPage(context, TAG, activity).display("feeds");
+				new ViewSwapper(context).display("feeds");
 			}
 		});
 		manageFeedsAdd = (Button) findViewById(R.id.addfeed_button);
@@ -142,8 +146,8 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 			}
 		});
 
-		new getPage(context, TAG, activity).display("load");	
-		new getPage(context, TAG, activity).SimplectaLogIn();
+		new ViewSwapper(context).display("load");	
+		new getPage(context, activity).SimplectaLogIn();
 		
 	}//end of oncreate
 	
@@ -156,12 +160,32 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 				if (marked == false){
 					marked = true;
 					wvMain.loadUrl("javascript:$(\".ajax_link\").click();");
-					//refresh();
+					refresh();
 				}			
 			}		
 		});  
-		wvMain.loadUrl("simplecta.appspot.com/all/");
-		
+		wvMain.loadUrl("http://simplecta.appspot.com/");		
+	}
+	
+	public void clearAll(){
+		Log.d(TAG, "clearAll()");
+		new ViewSwapper(context).display("login");
+		MainActivity.wvMain.setWebViewClient(new WebViewClient() {
+			@Override
+			public void onPageFinished(WebView view, String url) {
+				if (feeds.size() > 0){
+					Log.d(TAG, Integer.toString(feeds.size()));
+					wvMain.loadUrl("javascript:$(\".ajax_link\").click();");
+					clearAll();
+				}	
+				else {
+					String html = new BuildView(context,TAG).buildMainPage();
+					wvUser.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null);
+					new ViewSwapper(context).display("feeds");
+				}
+			}		
+		});  
+		wvMain.loadUrl("http://simplecta.appspot.com/");		
 	}
 	
 	public void newRSSFeed(final String rssURL){
@@ -177,19 +201,25 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 					Log.d(TAG, "loaded = false");
 					Log.d(TAG, "loadUrl(" + fillForm + submitForm + ")");
 					loaded = true;
+					Log.d(TAG, fillForm);
 					webview.loadUrl(fillForm + submitForm);
 				}
 				else if (loaded == true){
 					Log.d(TAG, "loaded = true");
 					if (url.contains("/addRSS/?")){
 						Log.d(TAG, "failed to add rss feed");
-						Toast.makeText(context, "Failed to subscribe to rss feed", Toast.LENGTH_LONG).show();
+						Log.d(TAG, url);
+						Toast toast = Toast.makeText(context,"Failed to subscribe to rss feed", Toast.LENGTH_LONG);
+						toast.setGravity(Gravity.CENTER, 0, 0);
+						toast.show();
 					}
 					else {
 						Log.d(TAG, "successfully added new rss feed");
 						loaded_feeds = false;
 						loaded_managefeeds = false;
-						Toast.makeText(context, "Subscribe successful", Toast.LENGTH_LONG).show();
+						Toast toast = Toast.makeText(context, "Subscribe successful", Toast.LENGTH_LONG);
+						toast.setGravity(Gravity.CENTER, 0, 0);
+						toast.show();
 						if (isAddRSSFeed = true){
 							manageFeedsEditText.setText("http://");
 						}
@@ -205,6 +235,7 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 		Log.d(TAG, "addRSSFeed()");
 		isAddRSSFeed = true;
 		final EditText input = new EditText(this);
+		input.setInputType(InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
 		manageFeedsEditText = input;
 		input.setText("http://"); 
     	AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -262,68 +293,56 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 		Log.d(TAG, "manageFeeds()");
 		if (loaded_managefeeds == false){
 			Log.d(TAG, "simplecta feeds list needs to be loaded");
-			new getPage(context, TAG, activity).display("load");
-			new getPage(context, TAG, activity).getSimplectaFeedsList(true);
+			new ViewSwapper(context).display("load");
+			new getPage(context, activity).getSimplectaFeedsList();
 		}
 		else {
 			wvManageFeeds.loadDataWithBaseURL("file:///android_asset/", new BuildView(context, TAG).buildManageFeedsPage(), "text/html", "UTF-8", null);
-	    	new getPage(context, TAG, activity).display("managefeeds");
+	    	new ViewSwapper(context).display("managefeeds");
 		}
 	}
 	
 	public void refresh(){
-		Log.d(TAG, "refresh()");
+		Log.d(TAG, "refresh()");	
 		if (currPage == "load"){
-			new getPage(context, TAG, activity).SimplectaLogIn();
+			new getPage(context, activity).SimplectaLogIn();
 			return ;
 		}
-		prevPage = currPage;
-		isRefresh = true;
-		new getPage(context,TAG,activity).display("load");
-		if (prefs.getBoolean("preload_checkbox", false) == true){
-			new getPage(context,TAG, activity).getSimplectaMain();
-		}
-		else if (prefs.getBoolean("preload_checkbox", false) == false){
-			if (prevPage == "feeds"){
-				if (feedsPage.equals("simple") || feedsPage.equals("detailed")){
-					new getPage(context,TAG, activity).getSimplectaMain();
-				}
-				else{
-					String pg = feedsPage.substring(5);
-					isLoadXML = true;
-					Log.d(TAG, pg);
-					for (int i=0; i<MainActivity.objectList.size(); i++){
-						Log.d(TAG,MainActivity.objectList.get(i).getTitle());
-						if (MainActivity.objectList.get(i).getTitle().equalsIgnoreCase(pg)){
-							String fixedUrl = MainActivity.objectList.get(i).getUrl();
-							fixedUrl = new Parse(context,TAG).clean(fixedUrl);
-							fixedUrl = fixedUrl.substring(fixedUrl.indexOf("http"));
-							Log.d(TAG, "found " + fixedUrl);
-							new RequestTask(context, TAG, activity).execute(fixedUrl);
-						}
-					}
-				}
+		else {
+			prevPage = currPage;
+			isRefresh = true;
+			new ViewSwapper(context).display("load");
+			
+			if (prefs.getBoolean("preload_checkbox", true) == true){
+				new getPage(context,activity).getSimplectaMain();
 			}
-			if (prevPage == "managefeeds"){
-				new getPage(context,TAG, activity).getSimplectaFeedsList(true);
+			else {
+				if (prevPage.equals("main") || prevPage.equals("descMain")){
+					new getPage(context, activity).getSimplectaMain();
+				}
+				else if (prevPage.contains("descFeed-") || prevPage.contains("feed-")){
+					
+				}
+				else if (prevPage.equals("managefeeds")){
+					new getPage(context, activity).getSimplectaFeedsList();
+				}
 			}
 		}
 	}
 	
 	public void newest(int howMany){
-		wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context, TAG).buildMainPageNewest(howMany), "text/html", "UTF-8", null);
-		new getPage(context,TAG,activity).display("feeds");
+		
 	}
 	
 	@Override
 	public boolean onKeyDown(int keyCode, KeyEvent event) {
 	    if ((keyCode == KeyEvent.KEYCODE_BACK)) {
+	    	Log.d(TAG, "onKeyDown(back)");
 	    	if (currPage == "login"){
 	    		Log.d(TAG, "confirm exit");
 	    		new AlertDialog.Builder(this)
 	            .setIcon(android.R.drawable.ic_dialog_alert)
 	            .setTitle("Quit the App?")
-	            //.setMessage(R.string.reallyQuit)
 	            .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
 	                public void onClick(DialogInterface dialog, int which) {
 	                    MainActivity.this.finish();    
@@ -332,42 +351,62 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 	            .setNegativeButton("No", null)
 	            .show();
 	    	}
-	    	else if (currPage == "feeds"){
-	    		if (feedsPage.contains("feed-")){
-	    			if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean("preload_checkbox", false) == true){
-	    				if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean("detailed_mainpage_checkbox", false) == true){
-	    					MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context,TAG).buildMainPageSimple(), "text/html", "UTF-8", null);
-	    				}
-	    				else {
-	    					MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context,TAG).buildMainPageDetailed(), "text/html", "UTF-8", null);
-	    				}
-	    			}
-	    			else {
-	    				MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context,TAG).buildMainPageSimple(), "text/html", "UTF-8", null);
-	    			}
-	    			new getPage(context, TAG, activity).display("feeds");
-	    		}
-	    		else {
-	    			Log.d(TAG, "logout or exit");
-	    			new AlertDialog.Builder(this)
-		            .setIcon(android.R.drawable.ic_dialog_alert)
+	    	else if (currPage.equals("main")){
+	    		Log.d(TAG, "logout or exit");
+	    		new AlertDialog.Builder(this)
+		        	.setIcon(android.R.drawable.ic_dialog_alert)
 		            .setTitle("Quit the App?")
-		            //.setMessage(R.string.reallyQuit)
 		            .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-		                public void onClick(DialogInterface dialog, int which) {
-		                    MainActivity.this.finish();    
-		                }
+		            	public void onClick(DialogInterface dialog, int which) {
+		            		MainActivity.this.finish();    
+		            	}
 		            })
 		            .setNegativeButton("No", null)
 		            .show();
+	    	}
+	    	else if (currPage.equals("managefeeds")){
+	    		Log.d(TAG, "go back to simplecta main page");
+	    		String html = new BuildView(context, TAG).buildMainPage();
+    			MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null);
+    			new ViewSwapper(context).display("main");
+	    	}
+	    	else if (currPage.equals("descMain")){
+	    		Log.d(TAG, "go back to simplecta main page");
+	    		String html = new BuildView(context, TAG).buildMainPage();
+    			MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null);
+    			new ViewSwapper(context).display("main");
+	    	}
+	    	else if (currPage.contains("descFeed-")){
+	    		String channelTitle = currPage.substring(9);
+	    		int xmlIndex = -1;
+	    		for (int i=0; i<XMLitems.size(); i++){
+	    			if (XMLitems.get(i).get(0).getChannelTitle().equals(channelTitle)){
+	    				xmlIndex = i;
+	    			}
+	    		}
+	    		if (xmlIndex != -1){
+	    			String html = new BuildView(context, TAG).buildMainPageFeed(xmlIndex);
+	    			MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null);
+	    			new ViewSwapper(context).display("feed-" + channelTitle);
+	    		}
+	    		else {
+	    			Log.d(TAG, "could not find index for descFeed- in xml");
+	    			Toast toast = Toast.makeText(context, "ERROR", Toast.LENGTH_LONG);
+					toast.setGravity(Gravity.CENTER, 0, 0);
+					toast.show();
+					String html = new BuildView(context, TAG).buildMainPage();
+	    			MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null);
+	    			new ViewSwapper(context).display("main");
 	    		}
 	    	}
-	    	else if (currPage == "managefeeds"){
-	    		Log.d(TAG, "go back to simplecta main page");
-	    		new getPage(context,TAG,activity).display("feeds");
+	    	else if (currPage.contains("feed-")){
+	    		new ViewSwapper(context).display("managefeeds");
 	    	}
 	    	else {
-	    		Log.d(TAG, "unhandled event on back");
+	    		Log.d(TAG, "unhandled event on back, currPage = " + currPage);
+	    		String html = new BuildView(context,TAG).buildMainPage();
+	    		MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null);
+	    		new ViewSwapper(context).display("main");
 	    	}
 	        return true;
 	    }
@@ -396,49 +435,45 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
                startActivity(settings);
                return true;
             case R.id.action_logout:
-            	new getPage(context, TAG, activity).SimplectaLogOut();
+            	//new getPage(context, activity).SimplectaLogOut();
+            	new getPage(context, activity).SimplectaLogIn();
             	return true; 
             case R.id.action_manage:
             	manageFeeds();
             	return true;
             case R.id.action_reload:
-            	//new getPage(context,TAG,activity).display("load");
-            	//new getPage(context, TAG, activity).getSimplectaMain();
             	refresh();
             	return true;
             case R.id.action_markAllRead:
             	markReadAll();
             	return true;
             case R.id.item1:
-            	new getPage(context, TAG, activity).display("login");
+            	new ViewSwapper(context).display("login");
             	return true;
             case R.id.item2:
-            	new getPage(context, TAG, activity).display("feeds");
+            	new ViewSwapper(context).display("main");
             	return true;
             case R.id.item3:
-            	new getPage(context, TAG, activity).display("managefeeds");
+            	new ViewSwapper(context).display("managefeeds");
             	return true;   
             case R.id.item4:
-            	new getPage(context, TAG, activity).display("load");
+            	new ViewSwapper(context).display("load");
             	return true; 
             case R.id.item5:
-            	newest(5);
+            	clearAll();
             	return true; 
             default:
                 return super.onOptionsItemSelected(item);
         }
 	}
 
-	
-
 	@Override
 	public boolean onQueryTextChange(String newText) {
-		// TODO Auto-generated method stub
 		return false;
 	}
 
 	@Override
-	public boolean onQueryTextSubmit(String query) {
+	public boolean onQueryTextSubmit(String query) {/*
 		// TODO Auto-generated method stub
 		String indexPage = null;
         indexPage = "<head><title>Simplecta RSS</title><link rel=\"stylesheet\" media=\"all\" href=\"style.css\" type=\"text/css\"></head>"
@@ -446,23 +481,21 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
         //This takes a while to load. Links somehow not working
         for(int i=0; i<MainActivity.feeds.size(); i++){
                 //System.out.println(MainActivity.feeds.get(i).getURL());
-                if(MainActivity.feeds.get(i).getDesc().contains(query) || MainActivity.feeds.get(i).getURL().contains(query) || 
+                if(MainActivity.feeds.get(i).getDesc().contains(query) || MainActivity.feeds.get(i).getItemURL().contains(query) || 
                                 MainActivity.feeds.get(i).getCategory().contains(query)){
-                indexPage+="<article class=\"underline\"><div class=\"post-content\"><h2><a href=\""+MainActivity.feeds.get(i).getURL()
-                +"\" /a>" + MainActivity.feeds.get(i).getDesc() +"</a></h2><p>" + MainActivity.feeds.get(i).getCategory()
-                /*+"<input type=\"checkbox\" name=\"markBox\" value=\"markRead\">"*/        
+                indexPage+="<article class=\"underline\"><div class=\"post-content\"><h2><a href=\""+MainActivity.feeds.get(i).getItemURL()
+                +"\" /a>" + MainActivity.feeds.get(i).getDesc() +"</a></h2><p>" + MainActivity.feeds.get(i).getCategory()    
                 +"</p></div><div class=\"clear\"></div></article>";
                 }
         }
         indexPage+="</div></body></html>";
-        new getPage(context, TAG, activity).display("feeds");
-        MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", indexPage, "text/html", "UTF-8", null);
+        new ViewSwapper(context).display("feeds");
+        MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", indexPage, "text/html", "UTF-8", null);*/
 		return false;
 	}
 
 	@Override
 	public void onClick(View v) {
-		// TODO Auto-generated method stub
 		
 	}
 	

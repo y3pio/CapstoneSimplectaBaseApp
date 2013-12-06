@@ -25,105 +25,125 @@ class RSSReaderClient extends WebViewClient{
 	@Override
 	public boolean shouldOverrideUrlLoading(WebView webview, String url){
 		Log.d(TAG, "shouldOverrideUrlLoading: " + url);
-		/*
-		 * fix the url if it is modified
-		 */
+		
+		//fix the url if it is not a 'real' url
 		if (url.indexOf("file:///android_asset/") != -1){
 			url = url.substring(url.indexOf("file:///android_asset/") + 22);
 		}
+		
 		/*
 		 * custom url handling determined by character at position 0 of the url string
-		 * if 1, it is a link from the main simplecta feed, load it in separate browser, mark it read in wvMain, undisplay it if pref
-		 * if 2, it is [view] from the manage feeds page, load customized html to display feeds from the rss feed
-		 * if 3, it is [unsubscribe] from manage feeds, remove it from the display
-		 * if 4, it is a link from individual rss feed display, load in separate browser
+		 * if 1, it is a link from the main simplecta page w/desc page
+		 * if 2, it is [view] from the manage feeds page
+		 * if 3, it is [unsubscribe] from manage feeds
+		 * if 4, it is link from a specific feed page
+		 * if 5, it is link from main simplecta page w/o desc page
+		 * if 6, it is [mark unread] from main simplecta page
 		 */
-		if (url.charAt(0) == '1'){	
-			int index;
-			if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean("auto_refresh_checkbox", false) == true){
-				url = url.substring(2);
-				index = Integer.parseInt(url.substring(0, url.indexOf("/")));
-				MainActivity.feeds.remove(index);
-				
-				if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean("preload_checkbox", false) == false){
-					MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context,TAG).buildMainPageSimple(), "text/html", "UTF-8", null);
-				}
-				else if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean("preload_checkbox", false) == true){
-					if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean("detailed_mainpage_checkbox", false) == false){
-						MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context,TAG).buildMainPageSimple(), "text/html", "UTF-8", null);
-					}
-					else if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean("detailed_mainpage_checkbox", false) == true){
-						MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context, TAG).buildMainPageDetailed(), "text/html", "UTF-8", null);
-					}
-				}
-			}
-			String parseKey = url.substring(url.indexOf("=")+1);
-			while(parseKey.indexOf("&lt;") != -1){
-				parseKey = parseKey.replace("&lt;", "<");
-			}
-			while(parseKey.indexOf("&#34;") != -1){
-				parseKey = parseKey.replace("&#34;", "\"");
-			}
-			while(parseKey.indexOf("&gt;") != -1){
-				parseKey = parseKey.replace("&gt;", ">");
-			}
-			while(parseKey.indexOf("&amp") != -1){
-				parseKey = parseKey.replace("&amp", "&");
-			}
-			while(parseKey.indexOf("%3a") != -1){
-				parseKey = parseKey.replace("%3a", ":");
-			}
-			while(parseKey.indexOf("%2f") != -1){
-				parseKey = parseKey.replace("%2f", "/");
-			}
-			String parseUrl = parseKey.substring(parseKey.indexOf("&link=")+6);	//actual feed url
-			parseKey = "http://simplecta.appspot.com/markRead/?" + parseKey.substring(0,parseKey.indexOf("&link="));//mark read
+		if (url.charAt(0) == '1'){
+			url = url.substring(2);
+			int mark = url.indexOf("/");
+			int index = Integer.parseInt(url.substring(0,mark));
+			url = url.substring(url.indexOf("/")+1);
+			mark = url.indexOf("/");
+			int XMLindex = Integer.parseInt(url.substring(0,mark));
+			url = url.substring(url.indexOf("/")+1);
+			int XMLitemIndex = Integer.parseInt(url);
 			
-			MainActivity.wvMain.setWebViewClient(new WebViewClient());
-			MainActivity.wvMain.loadUrl(parseKey);
-			context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(parseUrl)));
+			String markRead = "http://simplecta.appspot.com/markRead/?" +  MainActivity.feeds.get(index).getItemLinkKey().substring(11);
+			markRead = markRead.replace("&amp;", "&");
+			markRead = markRead.substring(0,markRead.indexOf("&link="));
+			
+			String html = new BuildView(context, TAG).BuildDesc(XMLindex, XMLitemIndex);
+			MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null);
+			new ViewSwapper(context).display("descMain");
+			
+			if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean("auto_refresh_checkbox", true) == true){
+				MainActivity.feeds.remove(index);
+			}
+			else {
+				MainActivity.feeds.get(index).setMarked();
+			}
+
 		}
 		else if (url.charAt(0) == '2'){//clicked view on managefeeds
-			url = new Parse(context, TAG).clean(url.substring(1));
-			Log.d(TAG, url);
-			Boolean isXMLLoaded = false;
+			url = url.substring(2);
+			int index = Integer.parseInt(url);
+			String channelTitle = MainActivity.objectList.get(index).getChannelTitle();
+			
+			int xmlIndex = -1;
 			for (int i=0; i<MainActivity.XMLitems.size(); i++){
-				if (MainActivity.XMLitems.get(i).get(0).getCategory().equalsIgnoreCase(url)){
-					Log.d(TAG, "already loaded, set up display " + MainActivity.XMLitems.get(i).get(0).getCategory());
-					isXMLLoaded = true;
-					
-					MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context,TAG).buildMainPageFeed(i), "text/html", "UTF-8", null);
-					new getPage(context, TAG).display("feeds");
+				if (MainActivity.XMLitems.get(i).get(0).getChannelTitle().equals(channelTitle)){
+					xmlIndex = i;
 				}
 			}
-			if (isXMLLoaded == false){
-				Log.d(TAG,  "xml not loaded");
-				MainActivity.isLoadXML = true;
-				new getPage(context,TAG).display("load");
-				for (int i=0; i<MainActivity.objectList.size(); i++){
-					Log.d(TAG,MainActivity.objectList.get(i).getTitle());
-					if (MainActivity.objectList.get(i).getTitle().equalsIgnoreCase(url)){
-						String fixedUrl = MainActivity.objectList.get(i).getUrl();
-						fixedUrl = new Parse(context,TAG).clean(fixedUrl);
-						fixedUrl = fixedUrl.substring(fixedUrl.indexOf("http"));
-						Log.d(TAG, "found " + fixedUrl);
-						new RequestTask(context, TAG, activity).execute(fixedUrl);
-					}
-				}
+			
+			if (xmlIndex == -1){
+				Log.d(TAG, "rss xml not loaded");
+				String cleanedChannelXMLLink = new Parse(context, activity).clean(MainActivity.objectList.get(index).getChannelLink().substring(7));
+				new RequestTask(context, activity, 2).execute(cleanedChannelXMLLink);
+			}
+			else{
+				Log.d(TAG, "rss xml loaded, start load single feed page");
+				String html = new BuildView(context, TAG).buildMainPageFeed(xmlIndex);
+				MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null);
+				new ViewSwapper(context).display("feed-" + channelTitle);
 			}
 		}
-		else if (url.charAt(0) == '3'){//clicked unsubscribe
+		else if (url.charAt(0) == '3'){//clicked unsubscribe on managefeeds
 			url = url.substring(2);
-			int index = Integer.parseInt(url.substring(0, url.indexOf("/")));
+			int index = Integer.parseInt(url);
+			String channelUnsubLink = "http://simplecta.appspot.com" + MainActivity.objectList.get(index).getChannelUnsubLink();
+
 			MainActivity.objectList.remove(index);
 			MainActivity.wvManageFeeds.loadDataWithBaseURL("file:///android_asset/", new BuildView(context, TAG).buildManageFeedsPage(), "text/html", "UTF-8", null);
-			String unsub = "http://simplecta.appspot.com" + url.substring(url.indexOf("/unsubscribe/?"));
+			
 			MainActivity.wvMain.setWebViewClient(new WebViewClient());
-			MainActivity.wvMain.loadUrl(unsub);
+			MainActivity.wvMain.loadUrl(channelUnsubLink);
 		}
 		else if (url.charAt(0) == '4'){//clicked a link on individual rss feed page
-			url = url.substring(url.indexOf("http"));
-			context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
+			url = url.substring(2);
+			int xmlIndex = Integer.parseInt(url.substring(0, url.indexOf("/")));
+			int itemIndex = Integer.parseInt(url.substring(url.indexOf("/")+1));
+			String html = new BuildView(context, TAG).BuildDesc(xmlIndex, itemIndex);
+			MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null);
+			new ViewSwapper(context).display("descFeed-" + MainActivity.XMLitems.get(xmlIndex).get(0).getChannelTitle());
+		}
+		else if (url.charAt(0) == '5'){
+			url = url.substring(2);
+			int index = Integer.parseInt(url);
+				
+			String markRead = "http://simplecta.appspot.com/markRead/?" +  MainActivity.feeds.get(index).getItemLinkKey().substring(11);
+			markRead = markRead.replace("&amp;", "&");
+			markRead = markRead.substring(0,markRead.indexOf("&link="));
+			String feedURL = MainActivity.feeds.get(index).getItemLink();
+			MainActivity.wvMain.setWebViewClient(new WebViewClient());
+			MainActivity.wvMain.loadUrl(markRead);
+			
+			context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(feedURL)));
+			if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean("auto_refresh_checkbox", true) == true){
+				MainActivity.feeds.remove(index);
+			}
+			else {
+				MainActivity.feeds.get(index).setMarked();
+			}
+			String html = new BuildView(context,TAG).buildMainPage();
+			MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null);
+		}
+		else if (url.charAt(0) == '6'){
+			url = url.substring(2);
+			int index = Integer.parseInt(url);
+				
+			String markUnread = "http://simplecta.appspot.com/markUnread/?" +  MainActivity.feeds.get(index).getItemLinkKey().substring(11);
+			markUnread = markUnread.replace("&amp;", "&");
+			markUnread = markUnread.substring(0,markUnread.indexOf("&link="));
+
+			MainActivity.wvMain.setWebViewClient(new WebViewClient());
+			MainActivity.wvMain.loadUrl(markUnread);
+			
+			MainActivity.feeds.get(index).setUnMarked();
+			String html = new BuildView(context,TAG).buildMainPage();
+			MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null);
 		}
 		else {
 			context.startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
