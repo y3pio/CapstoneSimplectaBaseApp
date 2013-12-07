@@ -157,8 +157,9 @@ class RequestTask extends AsyncTask<String, String, String>{
 			Log.d(TAG, "start load single feed page");
 			int XMLpos = MainActivity.XMLitems.size()-1;
 			String html = new BuildView(context, TAG).buildMainPageFeed(XMLpos);
+			String channelTitle = MainActivity.XMLitems.get(XMLpos).get(0).getChannelTitle();
 			MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null);
-			new ViewSwapper(context).display("feeds");
+			new ViewSwapper(context).display("feed-" + channelTitle);
 		}
 		else if (task == 3){
 			

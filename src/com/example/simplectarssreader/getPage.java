@@ -1,17 +1,17 @@
 package com.example.simplectarssreader;
 
-import java.util.ArrayList;
-
 import android.app.Activity;
 import android.content.Context;
-import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.preference.PreferenceManager;
 import android.util.Log;
-import android.view.View;
+import android.view.Gravity;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Toast;
 
 public class getPage{
 	final static String TAG = "getPage";
@@ -24,13 +24,35 @@ public class getPage{
 		activity = a;
 	}
 	
+	public boolean isOnline() {
+	    ConnectivityManager cm =
+	        (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+	    NetworkInfo netInfo = cm.getActiveNetworkInfo();
+	    if (netInfo != null && netInfo.isConnectedOrConnecting()) {
+	        return true;
+	    }
+	    return false;
+	}
+	
+	public void showNotConnectedMessage(){
+		Toast toast = Toast.makeText(context, "ERROR: Not connected to the internet", Toast.LENGTH_LONG);
+		toast.setGravity(Gravity.CENTER, 0, 0);
+		toast.show();
+	}
+	
 	public void SimplectaLogIn(){
-		Log.d(TAG, "loadSimplectaLogIn()");
+		Log.d(TAG, "SimplectaLogIn()");
+		if (isOnline() == false){
+			Log.d(TAG, "not connected to internet");
+			showNotConnectedMessage();
+			return ;
+		}
 		MainActivity.wvMain.setWebViewClient(new WebViewClient() {
 			@Override
 			public void onPageStarted(WebView view, String url, Bitmap favicon){
 				String urlHost = url.substring(0,url.indexOf(".com/")+4);
 				if (url.equals("http://simplecta.appspot.com/")){
+					
 					Log.d(TAG, "log in success, start simplecta: " + url);
 					MainActivity.isLoggedIn = true;
 					new ViewSwapper(context).display("load");
@@ -40,13 +62,6 @@ public class getPage{
 			@Override
 			public void onPageFinished(WebView view, String url) {
 				String urlHost = url.substring(0,url.indexOf(".com/")+4);
-				/*
-				if (url.equals("https://accounts.google.com/ServiceLogin?sacu=1&continue=https%3A%2F%2Fappengine.google.com%2F_ah%2Fconflogin%3Fcontinue%3Dhttp%3A%2F%2Fsimplecta.appspot.com%2F&shdf=ChULEgZhaG5hbWUaCVNpbXBsZWN0YQwSAmFoIhRkt2n5icx2ZfNQrZC4ga09Chc6dSgBMhR2T5mk9ZxKsiZCXaUb-7IoKVexlw&service=ah&ltmpl=gm")){
-					Log.d(TAG, "login: google log in page");
-				}
-				else if (url.equals("https://appengine.google.com/_ah/loginform?state=AJKiYcGBUGPSxov2outoup7tzPGzr6GKmvPLuJFWCwFqnAtknEDEfq1ZzG5BPEHk35Fx8XIsoHTBDLNaZwEX2ZbatuAbP2yo3Y4-5hu_5l5v3pVzaQj7t6jYBsakaEJcyAr3gZRqy-YVIV81xa6gv0E6-un5a6jo25z1d3WeMjC7aFuLriTi3wQsA8xX96_I7EL8IQr-OI1L5UQvT26Aq4MiguGkFYFOTVSDWIehXFbs4izvSCtU1l8rF2F6tVw2l-fpokvnwhffIGJSyGAE1yhItnrrlK33OFKHaDUrlxiIwJWMGle2CFKZUbIOizUIET4Wca9B8nxn3e30RBmW1k9NZ7uaOxBQmtXLYw5Wcl3vyH3qlziVJtHdAKxQc729hY3CScHADszegb7-oLh26n99zmEZags4IfYYJwG_53ByoR96N5itGyn1LniMwbVmSf8A-rEHQ-QyEiCo3kT2i8rZmJT0AKs5ZrROJ0MhjZtbwrUhS7YEgPwP8wzlS0dfEdLbpcZvlhSsHTVY7IKlWvkcs9rd2ce3EA")){
-					Log.d(TAG, "login: google verify/remember me page");
-				}*/
 				if (url.contains("https://appengine.google.com/_ah/loginform?state=")){
 					Log.d(TAG, "login: google verify/remember me page, allowing...");
 					//skip this page by clicking the button
@@ -93,7 +108,13 @@ public class getPage{
 		new ViewSwapper(context).display("login");	
 		//MainActivity.wvMain.loadUrl("https://accounts.google.com/ServiceLogin?sacu=1&continue=https%3A%2F%2Fappengine.google.com%2F_ah%2Fconflogin%3Fcontinue%3Dhttp%3A%2F%2Fsimplecta.appspot.com%2F&hl=en&service=ah");
 		//MainActivity.wvMain.loadUrl("https://accounts.google.com/ServiceLogin?sacu=1&continue=https%3A%2F%2Fappengine.google.com%2F_ah%2Fconflogin%3Fcontinue%3Dhttp%3A%2F%2Fsimplecta.appspot.com%2F&shdf=ChULEgZhaG5hbWUaCVNpbXBsZWN0YQwSAmFoIhRkt2n5icx2ZfNQrZC4ga09Chc6dSgBMhR2T5mk9ZxKsiZCXaUb-7IoKVexlw&service=ah&ltmpl=gm");
+		MainActivity.isLoggedIn = false;
+		MainActivity.feeds.clear();
+		MainActivity.XMLitems.clear();
+		MainActivity.objectList.clear();
+		MainActivity.isParseComplete.clear();
 		MainActivity.wvMain.loadUrl("https://accounts.google.com/Logout?continue=https%3A%2F%2Faccounts.google.com%2FServiceLogin%3Fcontinue%3Dhttps%253A%252F%252Fappengine.google.com%252F_ah%252Fconflogin%253Fcontinue%253Dhttp%253A%252F%252Fsimplecta.appspot.com%252F%26service%3Dah%26ltmpl%3Dgm%26shdf%3DChULEgZhaG5hbWUaCVNpbXBsZWN0YQwSAmFoIhRkt2n5icx2ZfNQrZC4ga09Chc6dSgBMhR2T5mk9ZxKsiZCXaUb-7IoKVexlw&il=true&zx=vqrv7fixo1v");
+		//MainActivity.wvMain.loadUrl(context.getString(R.string.simplecta_googlelogin_URL));
 	}
 	
 	public void getSimplectaMain(){
@@ -102,6 +123,11 @@ public class getPage{
 	
 	public void getSimplectaMain(final Boolean shouldDisplay){
 		Log.d(TAG, "getSimplectaMain()");
+		if (isOnline() == false){
+			Log.d(TAG, "not connected to internet");
+			showNotConnectedMessage();
+			return ;
+		}
 		MainActivity.wvMain.addJavascriptInterface(new JavaScriptInterface(context, TAG){
 			@SuppressWarnings("unused")
 			@JavascriptInterface
@@ -147,6 +173,11 @@ public class getPage{
 	
 	public void getSimplectaFeedsList(final boolean shouldDisplay){
 		Log.d(TAG, "getSimplectaFeedsList()");
+		if (isOnline() == false){
+			Log.d(TAG, "not connected to internet");
+			showNotConnectedMessage();
+			return ;
+		}
 		MainActivity.wvMain.addJavascriptInterface(new JavaScriptInterface(context, TAG){
 			@SuppressWarnings("unused")
 			@JavascriptInterface
@@ -181,47 +212,14 @@ public class getPage{
 		MainActivity.wvMain.loadUrl(context.getString(R.string.simplecta_managefeeds_URL));
 	}
 	
-
-	public void SimplectaLogOut(){/*
-		Log.d(TAG, "simplectaLogOut()");
-		new ViewSwapper(context).display("load");
-		if (MainActivity.isLoggedIn == true){
-			MainActivity.wvMain.setWebViewClient(new WebViewClient() {
-				@Override
-				public void onPageFinished(WebView view, String url) {
-					String urlHost = url.substring(0,url.indexOf(".com/")+4);
-					if (urlHost.contains("simplecta")){
-						Log.d(TAG, "log in success: " + urlHost);
-						new ViewSwapper(context).display("load");
-						MainActivity.wvMain.setWebViewClient(new WebViewClient());
-						getSimplectaMain();
-					}
-					else if (urlHost.contains("accounts.google")){
-						MainActivity.isLoggedIn = false;
-						MainActivity.feeds.clear();
-						MainActivity.XMLitems.clear();
-						MainActivity.objectList.clear();
-						new ViewSwapper(context).display("load");
-						SimplectaLogIn();
-						Log.d(TAG, "log out sucess");
-					}
-					else{
-						Log.d(TAG, "failure to log out");
-					}
-				}
-			});	    	
-			MainActivity.wvMain.loadUrl("https://accounts.google.com/Logout?continue=https%3A%2F%2Faccounts.google.com%2FServiceLogin%3Fcontinue%3Dhttps%253A%252F%252Fappengine.google.com%252F_ah%252Fconflogin%253Fcontinue%253Dhttp%253A%252F%252Fsimplecta.appspot.com%252F%26service%3Dah%26ltmpl%3Dgm%26shdf%3DChULEgZhaG5hbWUaCVNpbXBsZWN0YQwSAmFoIhRkt2n5icx2ZfNQrZC4ga09Chc6dSgBMhR2T5mk9ZxKsiZCXaUb-7IoKVexlw&il=true&zx=vqrv7fixo1v");
-		}
-		else {
-			Log.d(TAG, "not logged in yet");
-			new ViewSwapper(context).display("load");
-			SimplectaLogIn();
-		}*/
-	}
-	
 	public void getAllXMLs(){
 		Log.d(TAG, "getAllXMLs()");
-		MainActivity.isParseComplete = new ArrayList<Boolean>();
+		if (isOnline() == false){
+			Log.d(TAG, "not connected to internet");
+			showNotConnectedMessage();
+			return ;
+		}
+		MainActivity.isParseComplete.clear();
 		for (int i = 0; i<MainActivity.objectList.size(); i++){			
 			MainActivity.isParseComplete.add(false);
 			String fixedURL = MainActivity.objectList.get(i).getChannelLink();

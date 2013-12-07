@@ -22,6 +22,8 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.text.Editable;
@@ -104,6 +106,7 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 		feeds = new ArrayList<ParsedMain>(); 		//parsed main simplecta page 
 		objectList = new ArrayList<ParseSubscriptions>();	//parsed subscription list
 		XMLitems = new ArrayList<ArrayList<ParsedXML>>();	//parsed xmls of all rss subscriptions
+		isParseComplete = new ArrayList<Boolean>();
 		
 	/*	
 		Log.d(TAG, "create file directory");
@@ -150,7 +153,7 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 		new getPage(context, activity).SimplectaLogIn();
 		
 	}//end of oncreate
-	
+		
 	public void markReadAll(){
 		Log.d(TAG, "markReadAll()");
 		MainActivity.wvMain.setWebViewClient(new WebViewClient() {
@@ -304,7 +307,7 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 	
 	public void refresh(){
 		Log.d(TAG, "refresh()");	
-		if (currPage == "load"){
+		if (currPage == "load" || currPage == "login"){
 			new getPage(context, activity).SimplectaLogIn();
 			return ;
 		}
@@ -321,10 +324,50 @@ public class MainActivity extends Activity implements OnClickListener, SearchVie
 					new getPage(context, activity).getSimplectaMain();
 				}
 				else if (prevPage.contains("descFeed-") || prevPage.contains("feed-")){
+					String channelTitle = "";
+					if (prevPage.contains("descFeed-")){
+						channelTitle = MainActivity.prevPage.substring(9);
+					}
+					else if (prevPage.contains("feed-")){
+						channelTitle = MainActivity.prevPage.substring(5);
+					}
+					
+					int removeThis = -1;
+					for (int i=0; i<XMLitems.size(); i++){
+						if (XMLitems.get(i).get(0).getChannelTitle().equals(channelTitle)){
+							removeThis = i;
+						}
+					}
+					
+					if (removeThis == -1){
+						Log.d(TAG, "error, xml not in xml item");
+						new getPage(context, activity).getSimplectaMain();
+						return ;
+					}
+					else {
+						XMLitems.remove(removeThis);
+					}
+					
+					Boolean found = false;
+					for (int i=0; i<objectList.size(); i++){
+						if (objectList.get(i).getChannelTitle().equals(channelTitle)){
+							found = true;
+							String cleanedChannelXMLLink = new Parse(context, activity).clean(objectList.get(i).getChannelLink().substring(7));
+							new RequestTask(context, activity, 2).execute(cleanedChannelXMLLink);
+						}
+					}
+					
+					if (found == false){
+						Log.d(TAG, "error, xml link not in objeclist");
+						new getPage(context, activity).getSimplectaMain();
+					}
 					
 				}
 				else if (prevPage.equals("managefeeds")){
 					new getPage(context, activity).getSimplectaFeedsList();
+				}
+				else {
+					Log.d(TAG, "unhandled back: " + prevPage);
 				}
 			}
 		}
