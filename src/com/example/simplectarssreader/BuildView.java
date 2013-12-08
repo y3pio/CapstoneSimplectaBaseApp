@@ -20,6 +20,15 @@ final static String TAG = "BuildView";
 		Log.d(TAG, "buildMainPage()");
 		String indexPage = "<head><title>Simplecta RSS</title><link rel=\"stylesheet\" media=\"all\" href=\"style.css\" type=\"text/css\"></head><body><div class=\"wrap\"><div class=\"content\">"; 
 		
+		if (MainActivity.feeds.size() == 0){
+			indexPage+="</div></body></html>";
+			
+			indexPage+="<article class=\"underline\"><div align=\"center\" class=\"post-content\">" 
+					+ "<p><h3><font size=\"5\" color=\"yellow\">You have no new feeds</font><h3>";
+			indexPage += "</p></div><div class=\"clear\"></div></article>";
+			return indexPage;
+		}
+		
 		if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean("preload_checkbox", true) == true){
 			if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean("short_summary_checkbox", true) == true){
 				for(int i=0; i<MainActivity.feeds.size(); i++){
@@ -146,6 +155,16 @@ final static String TAG = "BuildView";
 		Log.d(TAG, "buildManageFeedsPage()");
 		String indexPage = "<head><title>Simplecta RSS</title><link rel=\"stylesheet\" media=\"all\" href=\"style.css\" type=\"text/css\"></head>"
 				+	"<body><div class=\"wrap\"><div class=\"content\">"; 
+		
+		if (MainActivity.objectList.size() == 0){
+			indexPage+="</div></body></html>";
+			
+			indexPage+="<article class=\"underline\"><div align=\"center\" class=\"post-content\">" 
+					+ "<p><h3><font size=\"5\" color=\"yellow\">You are not subscribed to any RSS feeds</font><h3>";
+			indexPage += "</p></div><div class=\"clear\"></div></article>";
+			
+			return indexPage;
+		}
 		
 		for (int i = 0; i<MainActivity.objectList.size(); i++){
 			indexPage+="<article class=\"underline\"><div class=\"post-content\"><h2>"

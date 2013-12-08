@@ -51,8 +51,7 @@ public class getPage{
 			@Override
 			public void onPageStarted(WebView view, String url, Bitmap favicon){
 				String urlHost = url.substring(0,url.indexOf(".com/")+4);
-				if (url.equals("http://simplecta.appspot.com/")){
-					
+				if (url.equals("http://simplecta.appspot.com/")){			
 					Log.d(TAG, "log in success, start simplecta: " + url);
 					MainActivity.isLoggedIn = true;
 					new ViewSwapper(context).display("load");
