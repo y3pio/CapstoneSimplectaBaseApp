@@ -26,26 +26,41 @@ public final class R {
     }
     public static final class drawable {
         public static final int ic_launcher=0x7f020000;
+        public static final int simplectaload=0x7f020001;
+        public static final int simplectaloadgoogle=0x7f020002;
+        public static final int white_bg=0x7f020003;
     }
     public static final class id {
+        public static final int LinearLayoutLoginButtons=0x7f0a0008;
         public static final int LoadText=0x7f0a0003;
         public static final int MainActivity_WebView_Main=0x7f0a0002;
-        public static final int MainActivity_WebView_Manage=0x7f0a0006;
+        public static final int MainActivity_WebView_Manage=0x7f0a0007;
         public static final int MainActivity_WebView_User=0x7f0a0001;
-        public static final int action_logout=0x7f0a0009;
-        public static final int action_manage=0x7f0a000a;
-        public static final int action_markAllRead=0x7f0a000b;
-        public static final int action_reload=0x7f0a000c;
-        public static final int action_search_icon=0x7f0a0007;
-        public static final int action_settings=0x7f0a0008;
-        public static final int addfeed_button=0x7f0a0004;
-        public static final int done_button=0x7f0a0005;
-        public static final int item1=0x7f0a000d;
-        public static final int item2=0x7f0a000e;
-        public static final int item3=0x7f0a000f;
-        public static final int item4=0x7f0a0010;
-        public static final int item5=0x7f0a0011;
+        public static final int action_logout=0x7f0a0015;
+        public static final int action_manage=0x7f0a0016;
+        public static final int action_markAllRead=0x7f0a0017;
+        public static final int action_reload=0x7f0a0018;
+        public static final int action_search_icon=0x7f0a0013;
+        public static final int action_settings=0x7f0a0014;
+        public static final int addfeed_button=0x7f0a0005;
+        public static final int buttonCreateAccount=0x7f0a000a;
+        public static final int buttonLogin=0x7f0a0009;
+        public static final int done_button=0x7f0a0006;
+        public static final int editText1=0x7f0a0012;
+        public static final int editTextPassword=0x7f0a0010;
+        public static final int editTextUserName=0x7f0a000e;
+        public static final int item1=0x7f0a0019;
+        public static final int item2=0x7f0a001a;
+        public static final int item3=0x7f0a001b;
+        public static final int item4=0x7f0a001c;
+        public static final int item5=0x7f0a001d;
+        public static final int linearLayoutPassword=0x7f0a000c;
+        public static final int linearLayoutUserName=0x7f0a000b;
+        public static final int loginImage=0x7f0a0004;
         public static final int relativeLayout=0x7f0a0000;
+        public static final int textView1=0x7f0a0011;
+        public static final int textViewPassword=0x7f0a000f;
+        public static final int textViewUserName=0x7f0a000d;
     }
     public static final class layout {
         public static final int activity_main=0x7f030000;

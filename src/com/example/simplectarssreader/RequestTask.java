@@ -2,7 +2,6 @@ package com.example.simplectarssreader;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.HttpStatus;
@@ -14,33 +13,34 @@ import org.apache.http.impl.client.DefaultHttpClient;
 
 import android.app.Activity;
 import android.content.Context;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.view.Gravity;
+import android.widget.Toast;
 
-/*
- * code by Konstantin Burov
- * taken from: http://stackoverflow.com/questions/3505930/make-an-http-request-with-android
- */
 class RequestTask extends AsyncTask<String, String, String>{
 	final static String TAG = "RequestTask";
-	String htmlString, fromActivity;
-	boolean isLoggedIn;
 	Context context;
 	Activity activity;
-	String chTitle;
+	int task;
 	
-	protected RequestTask(Context c, String calledFrom, Activity a){
+	protected RequestTask(Context c, Activity a){
 		context = c;
-		fromActivity = calledFrom;
 		activity = a;
-		//Log.d(TAG, "---------RequestTask---------");
+		task = -1;
+	}
+	protected RequestTask(Context c, Activity a, int t){
+		context = c;
+		activity = a;
+		task = t;
 	}
 	
 	@Override
     protected String doInBackground(String... uri) {
 		Log.d(TAG, "AsyncTask, url = " + uri[0]);
-		MainActivity.URLtoLoad = uri[0];
         HttpClient httpclient = new DefaultHttpClient();
         HttpResponse response;
         String responseString = "";
@@ -65,7 +65,6 @@ class RequestTask extends AsyncTask<String, String, String>{
         	Log.d(TAG, "Failed: IOException");
         }
         
-        htmlString = responseString;
         return responseString;    
     }
 
@@ -74,124 +73,9 @@ class RequestTask extends AsyncTask<String, String, String>{
         super.onPostExecute(result);
         Log.d(TAG, "onPostExecute()");
         
-		XMLParse(htmlString);
-		
-		if (MainActivity.isLoadXML == true) {
-			MainActivity.isLoadXML = false;
-			MainActivity.isRefresh = false;
-			Log.d(TAG, "get and load xml");
-			activity.runOnUiThread(new Runnable() {//use this because webview should be run on ui threads
-				public void run() {
-					MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context,TAG).buildMainPageFeed(chTitle), "text/html", "UTF-8", null);
-					new getPage(context, TAG).display("feeds");
-				}
-			});
-		}
-		else{
-			if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean("preload_checkbox", false) == true){
-				if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean("detailed_mainpage_checkbox", false) == true){
-					boolean finishedWait = false;
-					
-					int counter = 0;
-					for (int i=0; i<MainActivity.isParseComplete.size(); i++){
-						if (MainActivity.isParseComplete.get(i) == true){
-							counter++;
-						}
-					}
-					if (counter >= MainActivity.isParseComplete.size()){
-						finishedWait = true;
-					}		
-					if (finishedWait == true){
-						activity.runOnUiThread(new Runnable() {//use this because webview should be run on ui threads
-							public void run() {
-								if (MainActivity.isRefresh == false){
-									Log.d(TAG, "refresh = false, build mainpagedetailed");
-									MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context, TAG).buildMainPageDetailed(), "text/html", "UTF-8", null);
-									new getPage(context, TAG, activity).display("feeds");
-								}
-								else if (MainActivity.isRefresh == true){
-									Log.d(TAG, "isRefresh");
-									MainActivity.isRefresh = false;
-									if (MainActivity.prevPage == "feeds"){
-										if (MainActivity.feedsPage.contains("feed-")){
-											MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context, TAG).buildMainPageFeed(MainActivity.feedsPage.substring(5)), "text/html", "UTF-8", null);
-										}
-										else {
-											MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context, TAG).buildMainPageDetailed(), "text/html", "UTF-8", null);										
-										}
-										new getPage(context, TAG, activity).display("feeds");
-									}
-									if (MainActivity.prevPage == "managefeeds"){
-										MainActivity.wvManageFeeds.loadDataWithBaseURL("file:///android_asset/", new BuildView(context, TAG).buildManageFeedsPage(), "text/html", "UTF-8", null);
-										new getPage(context, TAG, activity).display("managefeeds");
-									}
-								}
-							}
-						});			   
-					}
-				}
-			}
-		}
-		
-		
-    }
-    
-    public void XMLParse(String html){//used to parse individual rss feeds
-		String htmlString = html;
-		
-		int channelstart = htmlString.indexOf("<channel>");
-		int channelend = htmlString.indexOf("<item>");
-		
-		String channelInfo = htmlString.substring(channelstart,channelend);
-		String channelTitle = channelInfo.substring(channelInfo.indexOf("<title>")+7, channelInfo.indexOf("</title>"));
-		chTitle = channelTitle;
-		
-		ArrayList<ParsedXML> xmlItems = new ArrayList<ParsedXML>();
-		
-		//System.out.println(channelTitle);
-	/*	String channelLink = channelInfo.substring(channelInfo.indexOf("<link>")+6, channelInfo.indexOf("</link>"));
-		System.out.println(channelLink);
-		String channelDesc = channelInfo.substring(channelInfo.indexOf("<description>")+13, channelInfo.indexOf("</description>"));
-		System.out.println(channelDesc);*/
-		//System.out.println("--------------------");
-		
-		int bookmark = channelend;
-		String title = "", link = "", desc = "";
-		while (bookmark > -1){
-			bookmark = htmlString.indexOf("<item>");
-			if (bookmark > -1){
-				int bookmarkend = htmlString.indexOf("</item>")+7;
-				String item = htmlString.substring(bookmark,bookmarkend);
-				
-				String iTitle = item.substring(item.indexOf("<title>")+7, item.indexOf("</title>")).replace("\n", "");
-				String iLink = item.substring(item.indexOf("<link>")+6, item.indexOf("</link>")).replace("\n", "");
-				String iDesc = item.substring(item.indexOf("<description>")+13, item.indexOf("</description>")).replace("\n", "");
-				
-				while(iDesc.indexOf("&lt;") != -1){
-					iDesc = iDesc.replace("&lt;", "<");
-				}
-				while(iDesc.indexOf("&#34;") != -1){
-					iDesc = iDesc.replace("&#34;", "\"");
-				}
-				while(iDesc.indexOf("&gt;") != -1){
-					iDesc = iDesc.replace("&gt;", ">");
-				}
-				while(iDesc.indexOf("%3a") != -1){
-					iDesc = iDesc.replace("%3a", ":");
-				}
-				while(iDesc.indexOf("%2f") != -1){
-					iDesc = iDesc.replace("%2f", "/");
-				}
-
-				xmlItems.add(new ParsedXML(iLink, iDesc, iTitle, channelTitle));
-				
-				htmlString = htmlString.substring(bookmarkend);
-			}
-		}	
-		MainActivity.XMLitems.add(xmlItems);
-		
-		if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean("preload_checkbox", false) == true){
-			//checklist for all requesttasks, keeps track of which request tasks are finished for loadMainPageDetailed()
+		new Parse(context, activity).XMLParse(result);
+			
+		if (task == 1){//called by xmlgetall() = preload pref = true
 			boolean marked = false;
 			for (int i=0; i<MainActivity.isParseComplete.size(); i++){
 				if (marked == false){
@@ -201,13 +85,88 @@ class RequestTask extends AsyncTask<String, String, String>{
 					}
 				}
 			}
+			
+			boolean finishedWait = false;		
+			int counter = 0;
+			for (int i=0; i<MainActivity.isParseComplete.size(); i++){
+				if (MainActivity.isParseComplete.get(i) == true){
+					counter++;
+				}
+			}
+			if (counter >= MainActivity.isParseComplete.size()){
+				finishedWait = true;
+			}
+			
+			if (finishedWait == true){
+				activity.runOnUiThread(new Runnable() {
+					public void run() {
+						if (MainActivity.isRefresh == false){
+							Log.d(TAG, "task = 1, refresh = false, display main page");
+							String html = new BuildView(context,TAG).buildMainPage();
+							MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null);
+							new ViewSwapper(context).display("main");
+						}
+						else if (MainActivity.isRefresh == true){
+							Log.d(TAG, "task = 1, refresh = TRUE, display prev page = " + MainActivity.prevPage);
+							MainActivity.isRefresh = false;
+							if (MainActivity.prevPage.equals("main") || MainActivity.prevPage.equals("descMain")){
+								String html = new BuildView(context,TAG).buildMainPage();
+								MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null);
+								new ViewSwapper(context).display("main");
+							}
+							else if (MainActivity.prevPage.contains("descFeed-") || MainActivity.prevPage.contains("feed-")){
+								String channelTitle = "";
+								if (MainActivity.prevPage.contains("descFeed-")){
+									channelTitle = MainActivity.prevPage.substring(9);
+								}
+								else if (MainActivity.prevPage.contains("feed-")){
+									channelTitle = MainActivity.prevPage.substring(5);
+								} 
+					    		int xmlIndex = -1;
+					    		for (int i=0; i<MainActivity.XMLitems.size(); i++){
+					    			if (MainActivity.XMLitems.get(i).get(0).getChannelTitle().equals(channelTitle)){
+					    				xmlIndex = i;
+					    			}
+					    		}
+					    		if (xmlIndex != -1){
+					    			String html = new BuildView(context, TAG).buildMainPageFeed(xmlIndex);
+					    			MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null);
+					    			new ViewSwapper(context).display("feed-" + channelTitle);
+					    		}
+					    		else {
+					    			Log.d(TAG, "could not find index for descFeed- in xml");
+					    			Toast toast = Toast.makeText(context, "ERROR, not subscribed to feed", Toast.LENGTH_LONG);
+									toast.setGravity(Gravity.CENTER, 0, 0);
+									toast.show();
+									String html = new BuildView(context, TAG).buildMainPage();
+					    			MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null);
+					    			new ViewSwapper(context).display("main");
+					    		}
+							}
+							else if (MainActivity.prevPage.equals("managefeeds")){
+								String html = new BuildView(context,TAG).buildManageFeedsPage();
+								MainActivity.wvManageFeeds.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null);
+								new ViewSwapper(context).display("managefeeds");
+							}
+						}
+					}
+				});
+			}
+		}
+		else if (task == 2){
+			Log.d(TAG, "start load single feed page");
+			int XMLpos = MainActivity.XMLitems.size()-1;
+			String html = new BuildView(context, TAG).buildMainPageFeed(XMLpos);
+			String channelTitle = MainActivity.XMLitems.get(XMLpos).get(0).getChannelTitle();
+			MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null);
+			new ViewSwapper(context).display("feed-" + channelTitle);
+		}
+		else if (task == 3){
+			
+			
 		}
 		
-		MainActivity.loaded_individualfeed.add(channelTitle);
-		
-		Log.d(TAG, "XMLParse() done");
-	}
-    
-    
+    }
+  
     
 }

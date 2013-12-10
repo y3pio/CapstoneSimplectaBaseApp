@@ -2,30 +2,40 @@ package com.example.simplectarssreader;
 
 public class ParsedMain {
 	
-	String url, urlKey, desc, category, rssUrl, key;
+	String itemLink, itemLinkKey, itemTitle, channelTitle, channelLink;
+	Boolean marked;
 	
 	protected ParsedMain(String a, String b, String c, String d, String e){
-		url = a;
-		urlKey = b;
-		desc = c;
-		category = d;
-		rssUrl = e;
+		itemLink = a;
+		itemLinkKey = b;
+		itemTitle= c;
+		channelTitle = d;
+		channelLink = e;
+		marked = false;
 	}
-	
-	public String getURL(){
-		return url;
+	public void setMarked(){
+		marked = true;
 	}
-	public String getURLKey(){
-		return urlKey;
+	public void setUnMarked(){
+		marked = false;
 	}
-	public String getDesc(){
-		return desc;
+	public Boolean getMarked(){
+		return marked;
 	}
-	public String getCategory(){
-		return category;
+	public String getItemLink(){
+		return itemLink;
 	}
-	public String getRSSURL(){
-		return rssUrl;
+	public String getItemLinkKey(){
+		return itemLinkKey;
+	}
+	public String getItemTitle(){
+		return itemTitle;
+	}
+	public String getChannelTitle(){
+		return channelTitle;
+	}
+	public String getChannelLink(){
+		return channelLink;
 	}
 	
 }

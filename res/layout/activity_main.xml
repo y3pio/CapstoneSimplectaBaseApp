@@ -4,21 +4,22 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/black" >
- 
+
     <WebView
         android:id="@+id/MainActivity_WebView_User"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_centerHorizontal="true"
         android:layout_centerVertical="true" />
-    
+
     <WebView
         android:id="@+id/MainActivity_WebView_Main"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_centerHorizontal="true" />
 
-    <TextView
+    <!--
+         <TextView 
         android:id="@+id/LoadText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -28,6 +29,23 @@
         android:text="Loading"
         android:textAppearance="?android:attr/textAppearanceLarge"
         android:textColor="@color/white" />
+    -->
+
+    <ImageView
+        android:id="@+id/LoadText"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:background="@drawable/simplectaload" />
+
+    <ImageView
+        android:id="@+id/loginImage"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_alignParentTop="true"
+        android:layout_centerHorizontal="true"
+        android:background="@drawable/simplectaloadgoogle" />
 
     <Button
         android:id="@+id/addfeed_button"
@@ -53,5 +71,107 @@
         android:layout_alignParentLeft="true"
         android:layout_alignParentRight="true"
         android:layout_alignParentTop="true" />
+    <!--
+    <EditText
+        android:id="@+id/editText2"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:inputType="textPassword" />
+
+    <EditText
+        android:id="@+id/editText1"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:ems="10"
+        android:inputType="textEmailAddress" />
+    
+    <Button
+        android:id="@+id/login_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Log In" />
+    -->
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:id="@+id/LinearLayoutLoginButtons"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentLeft="true"
+        android:weightSum="2"
+        android:layout_alignParentRight="true" >
+
+        <Button
+            android:id="@+id/buttonLogin"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="Login" />
+
+        <Button
+            android:id="@+id/buttonCreateAccount"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="Create Account" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/linearLayoutUserName"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:weightSum="3"
+        android:layout_margin = "5dip"
+        android:layout_above="@+id/linearLayoutPassword"
+        android:layout_alignParentLeft="true" >
+
+        <TextView
+            android:id="@+id/textViewUserName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:text="Username"
+            android:layout_weight="1"
+            android:textColor="#338ae1" />
+
+        <EditText
+            android:id="@+id/editTextUserName"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="2"
+            android:background="@drawable/white_bg"
+            android:inputType="textEmailAddress" />
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/linearLayoutPassword"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@+id/LinearLayoutLoginButtons"
+        android:layout_margin = "5dip"
+        android:weightSum="3"
+        android:layout_alignParentLeft="true" >
+
+        <TextView
+            android:id="@+id/textViewPassword"
+            android:layout_width="0dp"
+            android:layout_weight="1"
+            android:layout_height="wrap_content"
+            android:text="Password"
+            android:textColor="#338ae1" />
+
+        <EditText
+            android:id="@+id/editTextPassword"
+            android:layout_width="0dp"
+            android:layout_weight="2"
+            android:layout_height="wrap_content"
+            android:background="@drawable/white_bg"
+            android:inputType="textPassword" >
+
+            <requestFocus />
+        </EditText>
+    </LinearLayout>
+
+\
 
 </RelativeLayout>

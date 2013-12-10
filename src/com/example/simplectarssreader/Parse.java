@@ -1,5 +1,7 @@
 package com.example.simplectarssreader;
 
+import java.util.ArrayList;
+
 import android.app.Activity;
 import android.content.Context;
 import android.util.Log;
@@ -9,27 +11,14 @@ public class Parse {
 	
 	Context context;
 	Activity activity;
-	String fromActivity, html;
 	
-	protected Parse(String htmlstring){
-		context = null;
-		fromActivity = "";
-		html = htmlstring;
-		//Log.d(TAG, "------------Parse---------");
-	}
-	protected Parse(Context c, String calledFrom){
+	protected Parse(Context c, Activity a){
 		context = c;
-		fromActivity = calledFrom;
-		html = "";
-	}
-	protected Parse(Context c, String calledFrom, String htmlstring){
-		context = c;
-		fromActivity = calledFrom;
-		html = htmlstring;
-		//Log.d(TAG, "------------Parse---------");
+		activity = a;
 	}
 	
-	void BrianParse(){ 
+	void BrianParse(String parseThis){ 
+		String html = parseThis;
 		String lines[] = html.split("\\r?\\n");
 	    
 	    for(int i = 0; i < lines.length; i++){
@@ -49,13 +38,22 @@ public class Parse {
 	    Log.d(TAG, "BrianParse() done");
 	}
 	
-	public void JasonParse(){ //parse /all/
+	public void parseMain(String parseThis){ //parse /all/
+		Log.d(TAG, "parseMain()");
+		String html = parseThis;
 		String lines[] = html.split("\\r?\\n");
-		String url = null, key = null, description = null, category = null, rssUrl = null;
+		String url = "", 
+				key = "", 
+				description = "", 
+				category = "", 
+				rssUrl = "";
+		
 		for(int i=0; i<lines.length; i++){			
 			if(lines[i].contains("class=\"feedlink\" href=\"")){
 				lines[i] = lines[i].substring(lines[i].indexOf("class=\"feedlink\" href=\"")+23);
 				rssUrl = lines[i].substring(0, lines[i].indexOf("\">"));
+				rssUrl = rssUrl.substring(7);
+				rssUrl = clean(rssUrl);
 				category = lines[i].substring(lines[i].indexOf("\">")+2, lines[i].indexOf("</a>"));				
 			}
 			else if(lines[i].contains("class=\"read_link\" href=\"")){
@@ -68,12 +66,51 @@ public class Parse {
 				MainActivity.feeds.add(new ParsedMain(url, key, description, category, rssUrl));
 			}
 		}
-		Log.d(TAG, "JasonParse() done");
 	}
+	
+    public void XMLParse(String html){//used to parse individual rss feeds
+    	Log.d(TAG, "XMLParse()");
+		String htmlString = html;
+
+		int channelstart = htmlString.indexOf("<channel>");
+		int channelend = htmlString.indexOf("<item>");
+		
+		String channelInfo = htmlString.substring(channelstart,channelend);
+		String channelTitle = channelInfo.substring(channelInfo.indexOf("<title>")+7, channelInfo.indexOf("</title>"));
+		
+		ArrayList<ParsedXML> xmlItems = new ArrayList<ParsedXML>();
+		
+		//System.out.println(channelTitle);
+	/*	String channelLink = channelInfo.substring(channelInfo.indexOf("<link>")+6, channelInfo.indexOf("</link>"));
+		System.out.println(channelLink);
+		String channelDesc = channelInfo.substring(channelInfo.indexOf("<description>")+13, channelInfo.indexOf("</description>"));
+		System.out.println(channelDesc);*/
+		//System.out.println("--------------------");
+		
+		int bookmark = channelend;
+		String title = "", link = "", desc = "";
+		while (bookmark > -1){
+			bookmark = htmlString.indexOf("<item>");
+			if (bookmark > -1){
+				int bookmarkend = htmlString.indexOf("</item>")+7;
+				String item = htmlString.substring(bookmark,bookmarkend);
+				
+				String iTitle = item.substring(item.indexOf("<title>")+7, item.indexOf("</title>")).replace("\n", "");
+				String iLink = item.substring(item.indexOf("<link>")+6, item.indexOf("</link>")).replace("\n", "");
+				String iDesc = item.substring(item.indexOf("<description>")+13, item.indexOf("</description>")).replace("\n", "");
+				iDesc = clean(iDesc);
+				xmlItems.add(new ParsedXML(iLink, iDesc, iTitle, channelTitle));
+				
+				htmlString = htmlString.substring(bookmarkend);
+			}
+		}	
+		MainActivity.XMLitems.add(xmlItems);
+    }
 	
 	public String clean(String text){
 		String cleanText = text;
 		cleanText = cleanText.replace("%20", " ");
+		cleanText = cleanText.replace("&;", "&");
 		cleanText = cleanText.replace("%3a", ":");
 		cleanText = cleanText.replace("%2f", "/");
 		cleanText = cleanText.replace("&lt;", "<");

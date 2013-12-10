@@ -1,147 +1,250 @@
 package com.example.simplectarssreader;
 
-import java.util.ArrayList;
-
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.content.Context;
-import android.content.SharedPreferences;
+import android.content.DialogInterface;
 import android.graphics.Bitmap;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.preference.PreferenceManager;
+import android.text.Editable;
+import android.text.InputType;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.EditText;
+import android.widget.Toast;
 
 public class getPage{
-	final static String TAG = "getpage";
+	final static String TAG = "getPage";
 	
 	Context context;
 	Activity activity;
-	String fromActivity;
-	SharedPreferences prefs;
 	
-	protected getPage(Context c, String calledFrom, Activity a){
+	protected getPage(Context c, Activity a){
 		context = c;
-		String fromActivity = calledFrom;
 		activity = a;
-		prefs = PreferenceManager.getDefaultSharedPreferences(context); 
 	}
 	
-	protected getPage(Context c, String calledFrom){
-		context = c;
-		fromActivity = calledFrom;
-		prefs = PreferenceManager.getDefaultSharedPreferences(context); 
+	public boolean isOnline() {
+	    ConnectivityManager cm =
+	        (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+	    NetworkInfo netInfo = cm.getActiveNetworkInfo();
+	    if (netInfo != null && netInfo.isConnectedOrConnecting()) {
+	        return true;
+	    }
+	    return false;
+	}
+	
+	public void showNotConnectedMessage(){
+		Toast toast = Toast.makeText(context, "ERROR: Not connected to the internet", Toast.LENGTH_LONG);
+		toast.setGravity(Gravity.CENTER, 0, 0);
+		toast.show();
 	}
 	
 	public void SimplectaLogIn(){
-		Log.d(TAG, "loadSimplectaLogIn()");
+		Log.d(TAG, "SimplectaLogIn()");
+		if (isOnline() == false){
+			Log.d(TAG, "not connected to internet");
+			showNotConnectedMessage();
+			return ;
+		}
 		MainActivity.wvMain.setWebViewClient(new WebViewClient() {
 			@Override
 			public void onPageStarted(WebView view, String url, Bitmap favicon){
 				String urlHost = url.substring(0,url.indexOf(".com/")+4);
-				if (urlHost.contains("simplecta")){
-					Log.d(TAG, "log in success: ");
+				if (url.equals("http://simplecta.appspot.com/")){			
+					Log.d(TAG, "log in success, start simplecta: " + url);
 					MainActivity.isLoggedIn = true;
-					display("load");
+					new ViewSwapper(context).display("load");
+					getSimplectaMain();
 				}
 			}
 			@Override
 			public void onPageFinished(WebView view, String url) {
 				String urlHost = url.substring(0,url.indexOf(".com/")+4);
-				if (urlHost.contains("simplecta")){
-					MainActivity.wvMain.setWebViewClient(new WebViewClient());
-					Log.d(TAG,"log in done");
-
-					getSimplectaMain();//start getting info from simplecta
+				if (url.contains("https://appengine.google.com/_ah/loginform?state=")){
+					Log.d(TAG, "login: google verify/remember me page, allowing...");
+					//skip this page by clicking the button
+					view.loadUrl("javascript: document.getElementById(\"approve_button\").click(); void 0;");
 				}
-				else if (urlHost.contains("accounts.google") || urlHost.contains("appengine.google")){
-					display("login");
-					Log.d(TAG, "attempt log in " + url);
+				else if (url.equals("https://accounts.google.com/b/0/AccountRecoveryOptionsPrompt?continue=https%3A%2F%2Fappengine.google.com%2F_ah%2Fconflogin%3Fcontinue%3Dhttp%3A%2F%2Fsimplecta.appspot.com%2F&sarp=1&service=ah")){
+					Log.d(TAG, "login: google dont get locked out page, skipping...");
+					//skip this page by clicking the button
+					view.loadUrl("javascript:document.forms[0].submit()");
 				}
-				else {
-					Log.d(TAG, "failure to log in" + url + "\nredirect back to login");
-					view.loadUrl(context.getString(R.string.simplecta_login_URL));
+				else if (url.equals("https://accounts.google.com/AccountChooser?continue=https%3A%2F%2Fappengine.google.com%2F_ah%2Fconflogin%3Fcontinue%3Dhttp%3A%2F%2Fsimplecta.appspot.com%2F&hl=en&service=ah")){
+					Log.d(TAG, "login: google account chooser page, redirecting...");
+					//redirect to non account chooser
+					view.loadUrl("https://accounts.google.com/ServiceLogin?sacu=1&continue=https%3A%2F%2Fappengine.google.com%2F_ah%2Fconflogin%3Fcontinue%3Dhttp%3A%2F%2Fsimplecta.appspot.com%2F&hl=en&service=ah");
+				}
+				else if (url.contains("https://accounts.google.com/ServiceLogin?continue=https")){
+					Log.d(TAG, "login: google log in page but usernamed prefilled, redirecting...");
+					//its the login page but the username is already filled in, so redirect to another log in
+					view.loadUrl("https://accounts.google.com/ServiceLogin?sacu=1&continue=https%3A%2F%2Fappengine.google.com%2F_ah%2Fconflogin%3Fcontinue%3Dhttp%3A%2F%2Fsimplecta.appspot.com%2F&hl=en&service=ah");
+				}
+				else if (url.contains("https://accounts.google.com/ServiceLogin?sacu=1&continue=https%3A%2F%2Fappengine.google.com%2F_ah%2Fconflogin%3Fcontinue%3Dhttp%3A%2F%2Fsimplecta.appspot.com%2F&hl=en&service=ah")){
+					Log.d(TAG, "login: google log in page");
+					//should submit login here
+				}
+				else if (url.equals("https://accounts.google.com/ServiceLoginAuth")){
+					Log.d(TAG, "login: invalid log in");
+					//resubmit login here
+				}
+				else if (url.contains("https://accounts.google.com/SecondFactor?continue=")){
+					Log.d(TAG, "login: require user pin");
+					//submit pin, check remember
+				}
+				else if (url.equals("https://accounts.google.com/SecondFactor")){
+					Log.d(TAG, "login: invalid user pin");
+					//resubmit pin, check remember
+				}
+				else{
+					Log.d(TAG, "login: else = " + url);
+					//log the url to figure out what was not handled
 				}
 			}
 		}); 
 		
-		display("login");	
-		MainActivity.wvMain.loadUrl(context.getString(R.string.simplecta_login_URL));
+		new ViewSwapper(context).display("login");	
+		//MainActivity.wvMain.loadUrl("https://accounts.google.com/ServiceLogin?sacu=1&continue=https%3A%2F%2Fappengine.google.com%2F_ah%2Fconflogin%3Fcontinue%3Dhttp%3A%2F%2Fsimplecta.appspot.com%2F&hl=en&service=ah");
+		//MainActivity.wvMain.loadUrl("https://accounts.google.com/ServiceLogin?sacu=1&continue=https%3A%2F%2Fappengine.google.com%2F_ah%2Fconflogin%3Fcontinue%3Dhttp%3A%2F%2Fsimplecta.appspot.com%2F&shdf=ChULEgZhaG5hbWUaCVNpbXBsZWN0YQwSAmFoIhRkt2n5icx2ZfNQrZC4ga09Chc6dSgBMhR2T5mk9ZxKsiZCXaUb-7IoKVexlw&service=ah&ltmpl=gm");
+		MainActivity.isLoggedIn = false;
+		MainActivity.feeds.clear();
+		MainActivity.XMLitems.clear();
+		MainActivity.objectList.clear();
+		MainActivity.isParseComplete.clear();
+		MainActivity.wvMain.loadUrl("https://accounts.google.com/Logout?continue=https%3A%2F%2Faccounts.google.com%2FServiceLogin%3Fcontinue%3Dhttps%253A%252F%252Fappengine.google.com%252F_ah%252Fconflogin%253Fcontinue%253Dhttp%253A%252F%252Fsimplecta.appspot.com%252F%26service%3Dah%26ltmpl%3Dgm%26shdf%3DChULEgZhaG5hbWUaCVNpbXBsZWN0YQwSAmFoIhRkt2n5icx2ZfNQrZC4ga09Chc6dSgBMhR2T5mk9ZxKsiZCXaUb-7IoKVexlw&il=true&zx=vqrv7fixo1v");
+		//MainActivity.wvMain.loadUrl(context.getString(R.string.simplecta_googlelogin_URL));
+	}
+	
+	public void SimplectaLogIn(final String user, final String pass){
+		Log.d(TAG, "SimplectaLogIn() w/user,pw");
+		if (isOnline() == false){
+			Log.d(TAG, "not connected to internet");
+			showNotConnectedMessage();
+			return ;
+		}
+		MainActivity.wvMain.setWebViewClient(new WebViewClient() {
+			@Override
+			public void onPageStarted(WebView view, String url, Bitmap favicon){
+				new ViewSwapper(context).display("load");
+				String urlHost = url.substring(0,url.indexOf(".com/")+4);
+				if (url.equals("http://simplecta.appspot.com/")){	
+					Log.d(TAG, "log in success, start simplecta: " + url);
+					MainActivity.isLoggedIn = true;
+					getSimplectaMain();
+				}
+			}
+			@Override
+			public void onPageFinished(WebView view, String url) {
+				String urlHost = url.substring(0,url.indexOf(".com/")+4);
+				if (url.contains("https://appengine.google.com/_ah/loginform?state=")){
+					Log.d(TAG, "login: google verify/remember me page, allowing...");
+					//skip this page by clicking the button
+					view.loadUrl("javascript: document.getElementById(\"approve_button\").click(); void 0;");
+				}
+				else if (url.equals("https://accounts.google.com/b/0/AccountRecoveryOptionsPrompt?continue=https%3A%2F%2Fappengine.google.com%2F_ah%2Fconflogin%3Fcontinue%3Dhttp%3A%2F%2Fsimplecta.appspot.com%2F&sarp=1&service=ah")){
+					Log.d(TAG, "login: google dont get locked out page, skipping...");
+					//skip this page by clicking the button
+					view.loadUrl("javascript:document.forms[0].submit()");
+				}
+				else if (url.equals("https://accounts.google.com/AccountChooser?continue=https%3A%2F%2Fappengine.google.com%2F_ah%2Fconflogin%3Fcontinue%3Dhttp%3A%2F%2Fsimplecta.appspot.com%2F&hl=en&service=ah")){
+					Log.d(TAG, "login: google account chooser page, redirecting...");
+					//redirect to non account chooser
+					view.loadUrl("https://accounts.google.com/ServiceLogin?sacu=1&continue=https%3A%2F%2Fappengine.google.com%2F_ah%2Fconflogin%3Fcontinue%3Dhttp%3A%2F%2Fsimplecta.appspot.com%2F&hl=en&service=ah");
+				}
+				else if (url.contains("https://accounts.google.com/ServiceLogin?continue=https")){
+					Log.d(TAG, "login: google log in page but usernamed prefilled, redirecting...");
+					//its the login page but the username is already filled in, so redirect to another log in
+					view.loadUrl("https://accounts.google.com/ServiceLogin?sacu=1&continue=https%3A%2F%2Fappengine.google.com%2F_ah%2Fconflogin%3Fcontinue%3Dhttp%3A%2F%2Fsimplecta.appspot.com%2F&hl=en&service=ah");
+				}
+				else if (url.contains("https://accounts.google.com/ServiceLogin?sacu=1&continue=https%3A%2F%2Fappengine.google.com%2F_ah%2Fconflogin%3Fcontinue%3Dhttp%3A%2F%2Fsimplecta.appspot.com%2F&hl=en&service=ah")){
+					Log.d(TAG, "login: google log in page");
+					//should submit login here
+					String login = "javascript:var f = document.getElementById(\"gaia_loginform\");void(f.Email.value = '";
+					login += user;
+					login += "');void(f.Passwd.value = '";
+					login += pass;
+					login += "');void(f.PersistentCookie.checked=false);f.submit();";
+					view.loadUrl(login);
+				}
+				else if (url.equals("https://accounts.google.com/ServiceLoginAuth")){
+					Log.d(TAG, "login: invalid log in");
+					//invalid login message, clear text fields
+					Toast toast = Toast.makeText(context,"Invalid Username/Password combination", Toast.LENGTH_LONG);
+					toast.setGravity(Gravity.CENTER, 0, 0);
+					toast.show();
+					new ViewSwapper(context).test();
+				}
+				else if (url.contains("https://accounts.google.com/SecondFactor?continue=")){
+					Log.d(TAG, "login: require user pin");
+					//submit pin
+					verifyGooglePin(view);
+				}
+				else if (url.equals("https://accounts.google.com/SecondFactor")){
+					Log.d(TAG, "login: invalid user pin");
+					//resubmit pin
+					Toast toast = Toast.makeText(context,"Invalid pin", Toast.LENGTH_LONG);
+					toast.setGravity(Gravity.CENTER, 0, 0);
+					toast.show();
+					verifyGooglePin(view);
+				}
+				else{
+					Log.d(TAG, "login: else = " + url);
+					//log the url to figure out what was not handled
+				}
+			}
+		}); 
+			
+		MainActivity.isLoggedIn = false;
+		MainActivity.feeds.clear();
+		MainActivity.XMLitems.clear();
+		MainActivity.objectList.clear();
+		MainActivity.isParseComplete.clear();
+		MainActivity.wvMain.loadUrl("https://accounts.google.com/Logout?continue=https%3A%2F%2Faccounts.google.com%2FServiceLogin%3Fcontinue%3Dhttps%253A%252F%252Fappengine.google.com%252F_ah%252Fconflogin%253Fcontinue%253Dhttp%253A%252F%252Fsimplecta.appspot.com%252F%26service%3Dah%26ltmpl%3Dgm%26shdf%3DChULEgZhaG5hbWUaCVNpbXBsZWN0YQwSAmFoIhRkt2n5icx2ZfNQrZC4ga09Chc6dSgBMhR2T5mk9ZxKsiZCXaUb-7IoKVexlw&il=true&zx=vqrv7fixo1v");
 	}
 	
 	public void getSimplectaMain(){
+		getSimplectaMain(true);
+	}
+	
+	public void getSimplectaMain(final Boolean shouldDisplay){
 		Log.d(TAG, "getSimplectaMain()");
+		if (isOnline() == false){
+			Log.d(TAG, "not connected to internet");
+			showNotConnectedMessage();
+			return ;
+		}
 		MainActivity.wvMain.addJavascriptInterface(new JavaScriptInterface(context, TAG){
 			@SuppressWarnings("unused")
 			@JavascriptInterface
 			public void getSimplectaMainHTML(String html){
 				MainActivity.feeds.clear();
-				new Parse(context, TAG, html).JasonParse();
+				new Parse(context, activity).parseMain(html);
 				MainActivity.loaded_feeds = true;
-				Log.d(TAG, "getSimplectaMain(), got html");
 				
-				if (MainActivity.isRefresh == false){
-					if (prefs.getBoolean("preload_checkbox", false) == false){
-						Log.d(TAG, "pref preload = false; display main simple");
+				if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean("preload_checkbox", true) == true){
+					activity.runOnUiThread(new Runnable() {//use this because webview should be run on ui threads
+						public void run() {
+							getSimplectaFeedsList(false);
+						}
+					});
+				}
+				else {
+					if (shouldDisplay == true){
 						activity.runOnUiThread(new Runnable() {//use this because webview should be run on ui threads
 							public void run() {
-								MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context,TAG).buildMainPageSimple(), "text/html", "UTF-8", null);
-								display("feeds");
+								String html = new BuildView(context,TAG).buildMainPage();
+								MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null);
+								new ViewSwapper(context).display("main");
 							}
 						});
 					}
-					else if (prefs.getBoolean("preload_checkbox", false) == true){
-						if (prefs.getBoolean("detailed_mainpage_checkbox", false) == false){
-							Log.d(TAG, "pref preload = true, detailedmain = false; display simple main");
-							activity.runOnUiThread(new Runnable() {//use this because webview should be run on ui threads
-								public void run() {
-									MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context,TAG).buildMainPageSimple(), "text/html", "UTF-8", null);
-									display("feeds");
-								}
-							});
-						}
-					}
-				}
-				else if (MainActivity.isRefresh == true){
-					Log.d(TAG, "isRefresh");
-					if (prefs.getBoolean("preload_checkbox", false) == false){//handle refresh when preload = false
-						if (MainActivity.prevPage == "feeds"){//if the page was feeds page, done with refresh
-							MainActivity.isRefresh = false;
-							Log.d(TAG, "refresh: preload = false; page = feeds");
-							activity.runOnUiThread(new Runnable() {//use this because webview should be run on ui threads
-								public void run() {
-									MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context,TAG).buildMainPageSimple(), "text/html", "UTF-8", null);
-									display("feeds");
-								}
-							});
-						}
-					}
-					else if (prefs.getBoolean("preload_checkbox", false) == true){ //handle refresh when preload = true
-						if (prefs.getBoolean("detailed_mainpage_checkbox", false) == false){//if detailedmain = false
-							if (MainActivity.prevPage == "feeds"){//if page to refresh = feeds, done
-								MainActivity.isRefresh = false;
-								Log.d(TAG, "refresh: preload = true, detailedmain = false; page = feeds");
-								activity.runOnUiThread(new Runnable() {//use this because webview should be run on ui threads
-									public void run() {
-										MainActivity.wvUser.loadDataWithBaseURL("file:///android_asset/", new BuildView(context,TAG).buildMainPageSimple(), "text/html", "UTF-8", null);
-										display("feeds");
-									}
-								});
-							}
-						}
-					}
-				}
-					
-				MainActivity.loaded_feeds = true;
-				
-				if (prefs.getBoolean("preload_checkbox", false) == true){
-					Log.d(TAG, "preload = true");
-					activity.runOnUiThread(new Runnable() {//use this because webview should be run on ui threads
-						public void run() {
-							getSimplectaFeedsList();
-						}
-					});
 				}
 			}
 		}, "HTMLOUT");
@@ -149,7 +252,6 @@ public class getPage{
 		MainActivity.wvMain.setWebViewClient(new WebViewClient() {	
 			@Override
 			public void onPageFinished(WebView view, String url) {
-				Log.d(TAG, "getSimplectaMainPage() onPageFinished(), inject javacript");
 				MainActivity.wvMain.loadUrl("javascript:window.HTMLOUT.getSimplectaMainHTML('<html>'+document.getElementsByTagName('html')[0].innerHTML+'</html>');");		
 			}
 		});  
@@ -158,35 +260,36 @@ public class getPage{
 	}
 	
 	public void getSimplectaFeedsList(){
-		activity.runOnUiThread(new Runnable() {//use this because webview should be run on ui threads
-			public void run() {
-				getSimplectaFeedsList(false);
-			}
-		});
+		getSimplectaFeedsList(true);
 	}
 	
-	public void getSimplectaFeedsList(final Boolean isManageFeeds){
+	public void getSimplectaFeedsList(final boolean shouldDisplay){
 		Log.d(TAG, "getSimplectaFeedsList()");
+		if (isOnline() == false){
+			Log.d(TAG, "not connected to internet");
+			showNotConnectedMessage();
+			return ;
+		}
 		MainActivity.wvMain.addJavascriptInterface(new JavaScriptInterface(context, TAG){
 			@SuppressWarnings("unused")
 			@JavascriptInterface
 			public void getSimplectaFeedsListHTML(String html){
 				MainActivity.objectList.clear();
-				new Parse(context, TAG, html).BrianParse();
+				new Parse(context, activity).BrianParse(html);
 				MainActivity.loaded_managefeeds = true;
-				Log.d(TAG, "getSimplectaFeedsList() get html done");
 				
-				if (isManageFeeds == true){
-					Log.d(TAG, "isManageFeeds = true, load managefeeds page");
+				if (shouldDisplay == true){
 					activity.runOnUiThread(new Runnable() {//use this because webview should be run on ui threads
 						public void run() {
-							MainActivity.wvManageFeeds.loadDataWithBaseURL("file:///android_asset/", new BuildView(context, TAG).buildManageFeedsPage(), "text/html", "UTF-8", null);
-					    	display("managefeeds");
+							String html = new BuildView(context, TAG).buildManageFeedsPage();
+							MainActivity.wvManageFeeds.loadDataWithBaseURL("file:///android_asset/", html, "text/html", "UTF-8", null);
+					    	new ViewSwapper(context).display("managefeeds");
 						}
 					});
 				}
-				if (prefs.getBoolean("preload_checkbox", false) == true){
-					getXMLs();
+				
+				if (PreferenceManager.getDefaultSharedPreferences(context).getBoolean("preload_checkbox", true) == true){
+					getAllXMLs();
 				}
 			}
 		}, "HTMLOUT");
@@ -194,134 +297,72 @@ public class getPage{
 		MainActivity.wvMain.setWebViewClient(new WebViewClient() {
 			@Override
 			public void onPageFinished(WebView view, String url) {
-				Log.d(TAG, "getSimplectaFeedsList() onPageFinished() start inject javascript" + url);
 				MainActivity.wvMain.loadUrl("javascript:window.HTMLOUT.getSimplectaFeedsListHTML('<html>'+document.getElementsByTagName('html')[0].innerHTML+'</html>');");
 			}		
 		});  
 		
 		MainActivity.wvMain.loadUrl(context.getString(R.string.simplecta_managefeeds_URL));
 	}
-			
-			
-	public void SimplectaLogOut(){
-		Log.d(TAG, "simplectaLogOut()");
-		if (MainActivity.isLoggedIn == true){
-			MainActivity.wvMain.setWebViewClient(new WebViewClient() {
-				@Override
-				public void onPageFinished(WebView view, String url) {
-					String urlHost = url.substring(0,url.indexOf(".com/")+4);
-					if (urlHost.contains("simplecta")){
-						Log.d(TAG, "log in success: " + url);
-						MainActivity.wvMain.setVisibility(View.GONE);
-						MainActivity.wvMain.setWebViewClient(new WebViewClient());
-						getSimplectaMain();
-					}
-					else if (urlHost.contains("accounts.google")){
-						MainActivity.isLoggedIn = false;
-						//MainActivity.isLogInFinished = false;
-						MainActivity.feeds.clear();
-						MainActivity.XMLitems.clear();
-						MainActivity.objectList.clear();
-						display("load");
-						SimplectaLogIn();
-						Log.d(TAG, "log out sucess");
-					}
-					else{
-						Log.d(TAG, "failure to log out");
-					}
-				}
-			});	    	
-			MainActivity.wvMain.loadUrl(context.getString(R.string.simplecta_logout_URL));
-		}
-		else {
-			Log.d(TAG, "not logged in yet");
-		}
-	}
-			
-	public void display(String view){
-		if (view.equalsIgnoreCase("feeds")){
-			MainActivity.currPage = ("feeds");
-			
-			MainActivity.loadText.setVisibility(View.GONE);
-			
-			MainActivity.wvUser.setVisibility(View.VISIBLE);
-			
-			MainActivity.wvMain.setVisibility(View.GONE);
-			
-			MainActivity.wvManageFeeds.setVisibility(View.GONE);
-			MainActivity.manageFeedsDone.setVisibility(View.GONE);
-			MainActivity.manageFeedsAdd.setVisibility(View.GONE);
-		}
-		else if (view.equalsIgnoreCase("login")){
-			MainActivity.currPage = ("login");
-			
-			MainActivity.loadText.setVisibility(View.GONE);
-			
-			MainActivity.wvUser.setVisibility(View.GONE);
-			
-			MainActivity.wvMain.setVisibility(View.VISIBLE);
-					
-			MainActivity.wvManageFeeds.setVisibility(View.GONE);
-			MainActivity.manageFeedsDone.setVisibility(View.GONE);
-			MainActivity.manageFeedsAdd.setVisibility(View.GONE);
-		}
-		else if (view.equalsIgnoreCase("managefeeds")){
-			MainActivity.currPage = ("managefeeds");
-			
-			MainActivity.loadText.setVisibility(View.GONE);
-			
-			MainActivity.wvUser.setVisibility(View.GONE);
-					
-			MainActivity.wvMain.setVisibility(View.GONE);
-
-			MainActivity.manageFeedsDone.setVisibility(View.VISIBLE);
-			MainActivity.manageFeedsAdd.setVisibility(View.VISIBLE);
-			MainActivity.wvManageFeeds.setVisibility(View.VISIBLE);
-				
-		}
-		else if (view.equalsIgnoreCase("load")){
-			MainActivity.currPage = ("load");
-			
-			MainActivity.loadText.setVisibility(View.VISIBLE);
-			
-			MainActivity.wvUser.setVisibility(View.GONE);
-					
-			MainActivity.wvMain.setVisibility(View.GONE);
-					
-			MainActivity.wvManageFeeds.setVisibility(View.GONE);
-			MainActivity.manageFeedsDone.setVisibility(View.GONE);
-			MainActivity.manageFeedsAdd.setVisibility(View.GONE);
-		}
-	}
 	
-	public void getXMLs(){
-		Log.d(TAG, "getXMLs()");
-		MainActivity.isParseComplete = new ArrayList<Boolean>();
-		for (int i = 0; i<MainActivity.objectList.size(); i++){
-			Log.d(TAG, MainActivity.objectList.get(i).getUrl());
+	public void getAllXMLs(){
+		Log.d(TAG, "getAllXMLs()");
+		if (isOnline() == false){
+			Log.d(TAG, "not connected to internet");
+			showNotConnectedMessage();
+			return ;
+		}
+		MainActivity.isParseComplete.clear();
+		for (int i = 0; i<MainActivity.objectList.size(); i++){			
 			MainActivity.isParseComplete.add(false);
-			String fixedURL = MainActivity.objectList.get(i).getUrl();
+			String fixedURL = MainActivity.objectList.get(i).getChannelLink();
 			fixedURL = fixedURL.substring(fixedURL.indexOf("/feed/?")+7);
-			fixedURL = fixedURL.replace("%3a", ":");
-			fixedURL = fixedURL.replace("%2f", "/");
-			//System.out.println(fixedURL);
-			//System.out.println("-----------");
-			new RequestTask(context,TAG, activity).execute(fixedURL);
+			fixedURL = new Parse(context, activity).clean(fixedURL);
+			new RequestTask(context,activity, 1).execute(fixedURL);
 		}
-		Log.d(TAG, "done getting xml from feeds");
 	}
 	
-	public String clean(String text){
-		String cleanedText = text;
-		cleanedText = cleanedText.replace("%20", " ");
-		cleanedText = cleanedText.replace("%3a", ":");
-		cleanedText = cleanedText.replace("%2f", "/");
-		cleanedText = cleanedText.replace("&lt;", "<");
-		cleanedText = cleanedText.replace("&#34;", "\"");
-		cleanedText = cleanedText.replace("&gt;", ">");
-		cleanedText = cleanedText.replace("&amp", "&");		
-		return cleanedText;
+	public void verifyGooglePin(final WebView view){
+		Log.d(TAG, "verifyGooglePin()");
+		final EditText input = new EditText(context);
+		input.setInputType(InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+		MainActivity.googlePinEditText = input;
+		input.setText(""); 
+    	AlertDialog.Builder builder = new AlertDialog.Builder(context);
+    	builder.setTitle("Google 2-step verification");
+    	builder.setMessage("To verify your identity, check your phone and enter code provided");
+    	builder.setView(input);
+    	builder.setNegativeButton("Cancel", new DialogInterface.OnClickListener(){
+    		@Override
+            public void onClick(DialogInterface dialog, int which){
+              	;
+            }
+        });
+    	builder.setPositiveButton("OK", new DialogInterface.OnClickListener(){
+    		@Override
+            public void onClick(DialogInterface dialog, int which){
+              	;
+            }
+        });
+    	
+    	final AlertDialog getPin = builder.create();
+    	getPin.setCanceledOnTouchOutside(false);
+    	getPin.show();
+    	getPin.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(new View.OnClickListener(){            
+            @Override
+            public void onClick(View v){
+                Editable pin = input.getText();
+                String js = "javascript:document.getElementById('PersistentCookie').checked=false;document.getElementById('smsUserPin').value=\"" + pin + "\";document.forms[0].submit();";
+                view.loadUrl(js);
+                getPin.dismiss();
+            }
+        });
+    	getPin.getButton(AlertDialog.BUTTON_NEGATIVE).setOnClickListener(new View.OnClickListener(){            
+            @Override
+            public void onClick(View v){ 
+            	new ViewSwapper(context).test();
+            	getPin.dismiss();
+            }
+        });
 	}
-
 	
 }
